@@ -1,32 +1,19 @@
-package pl.kurs.anonymoussurveillance.models;
+package pl.kurs.anonymoussurveillance.dto;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
 import org.hibernate.validator.constraints.pl.PESEL;
+import pl.kurs.anonymoussurveillance.models.PersonAttribute;
 
-import java.io.Serializable;
+import java.util.List;
 
-@Entity
-@Table(name = "person")
-public class Person {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false)
+public class PersonDTO {
     private String name;
-    @Column(nullable = false)
     private String surname;
-    @PESEL
     private String pesel;
-    @Column(nullable = false)
     private int height;
-    @Column(nullable = false)
     private int weight;
-    @Column(nullable = false)
     private String email;
-    @ManyToOne
-    @JoinColumn(name = "person_type_id", nullable = false)
-    private PersonType personType;
+    private List<PersonAttribute> attributes;
 
     public String getName() {
         return name;
@@ -76,11 +63,11 @@ public class Person {
         this.email = email;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public List<PersonAttribute> getAttributes() {
+        return attributes;
     }
 
-    public Long getId() {
-        return id;
+    public void setAttributes(List<PersonAttribute> attributes) {
+        this.attributes = attributes;
     }
 }
