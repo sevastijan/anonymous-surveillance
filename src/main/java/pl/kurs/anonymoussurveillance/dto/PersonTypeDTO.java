@@ -1,9 +1,5 @@
 package pl.kurs.anonymoussurveillance.dto;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToMany;
 import pl.kurs.anonymoussurveillance.models.PersonAttribute;
 
 import java.util.List;

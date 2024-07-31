@@ -9,5 +9,4 @@ public class AnonymousSurveillanceApplication {
     public static void main(String[] args) {
         SpringApplication.run(AnonymousSurveillanceApplication.class, args);
     }
-
 }

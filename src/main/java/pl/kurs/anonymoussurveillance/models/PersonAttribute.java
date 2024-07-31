@@ -1,46 +1,54 @@
 package pl.kurs.anonymoussurveillance.models;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
 
 @Entity
-@Table(name = "person_attribute")
-public class PersonAttribute {
+@Setter
+@Getter
+@NoArgsConstructor
+@Table(name = "person_attributes")
+public class PersonAttribute implements Serializable {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "person_attr_seq")
+    @SequenceGenerator(name = "person_attr_seq", sequenceName = "seq_person_attr", initialValue = 1)
     private Long id;
-    private String name;
-    private String type;
 
-    public PersonAttribute(String name, String type) {
+    @Column(nullable = false)
+    private String name;
+
+    @Enumerated(EnumType.STRING)
+    private AttributeType type;
+
+    private String value;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "person_id")
+    private Person person;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "person_type_id")
+    private PersonType personType;
+
+    public PersonAttribute(String name, AttributeType type, String value, Person person, PersonType personType) {
         this.name = name;
         this.type = type;
+        this.value = value;
+        this.person = person;
+        this.personType = personType;
     }
 
-    public PersonAttribute() {
-
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String key) {
-        this.name = key;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
+    @Override
+    public String toString() {
+        return "PersonAttribute{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", type='" + type + '\'' +
+                ", value='" + value + '\'' +
+                '}';
     }
 }

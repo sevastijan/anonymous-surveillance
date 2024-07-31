@@ -1,7 +1,5 @@
 package pl.kurs.anonymoussurveillance.dto;
 
-import jakarta.persistence.Column;
-import org.hibernate.validator.constraints.pl.PESEL;
 import pl.kurs.anonymoussurveillance.models.PersonAttribute;
 
 import java.util.List;
