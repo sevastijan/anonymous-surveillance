@@ -6,5 +6,4 @@ import pl.kurs.anonymoussurveillance.models.PersonAttribute;
 
 @Repository
 public interface PersonAttributeRepository extends JpaRepository<PersonAttribute, Long> {
-
 }

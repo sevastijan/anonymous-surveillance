@@ -38,6 +38,7 @@ public class ImportService {
     }
 
     public Long importFile(MultipartFile file) {
+        //TODO: make this method transactional
         if (currentImportTask != null && !currentImportTask.isDone()) {
             throw new IllegalStateException("An import is already in progress");
         }
@@ -53,9 +54,7 @@ public class ImportService {
                 importStatus.setStartDate(LocalDateTime.now());
                 importStatusRepository.save(importStatus);
 
-                List<Person> personList = processFile(file, importStatus);
-
-//                savePersonList(personList);
+                processFile(file, importStatus);
 
                 importStatus.setStatus(Status.COMPLETED);
                 importStatus.setEndDate(LocalDateTime.now());
@@ -126,15 +125,9 @@ public class ImportService {
             if (personType.getRequiredAttributes() == null) {
                 throw new IllegalStateException("PersonType attributes cannot be null");
             }
-            personType.getRequiredAttributes().size();  // Ensure attributes are loaded
+            personType.getRequiredAttributes().size();
 
             Person person = new Person();
-            person.setPesel(record.get("pesel"));
-            person.setFirstName(record.get("firstName"));
-            person.setLastName(record.get("lastName"));
-            person.setHeight(Integer.parseInt(record.get("height")));
-            person.setWeight(Integer.parseInt(record.get("weight")));
-            person.setEmail(record.get("email"));
             person.setPersonType(personType);
 
             personList.add(person);
@@ -154,22 +147,12 @@ public class ImportService {
             }
         }
 
-        // Save persons and attributes, catching exceptions for duplicates
-        try {
-            personRepository.saveAll(personList);
-            personAttributeRepository.saveAll(personAttributes);
-        } catch (DataIntegrityViolationException e) {
-            // Handle duplicate entry exception
-            System.err.println("Duplicate entry detected: " + e.getMessage());
-            throw e; // Rethrow if needed, or handle accordingly
-        }
+        personRepository.saveAll(personList);
+        personAttributeRepository.saveAll(personAttributes);
+
+        //TODO: add importStatus update
 
         return personList;
-    }
-
-    @Transactional
-    public void savePersonList(List<Person> persons) {
-        personRepository.saveAll(persons);
     }
 
     public ImportStatus getImportStatus(Long importId) {

@@ -30,25 +30,10 @@ public class PersonAttribute implements Serializable {
     @JoinColumn(name = "person_id")
     private Person person;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "person_type_id")
-    private PersonType personType;
-
-    public PersonAttribute(String name, AttributeType type, String value, Person person, PersonType personType) {
+    public PersonAttribute(String name, AttributeType type, String value, Person person) {
         this.name = name;
         this.type = type;
         this.value = value;
         this.person = person;
-        this.personType = personType;
-    }
-
-    @Override
-    public String toString() {
-        return "PersonAttribute{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", type='" + type + '\'' +
-                ", value='" + value + '\'' +
-                '}';
     }
 }

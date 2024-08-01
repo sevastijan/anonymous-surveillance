@@ -3,6 +3,7 @@ package pl.kurs.anonymoussurveillance.initializer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import pl.kurs.anonymoussurveillance.models.AttributeType;
 import pl.kurs.anonymoussurveillance.models.RequiredAttribute;
 import pl.kurs.anonymoussurveillance.models.PersonType;
@@ -23,35 +24,57 @@ public class DataInitializer implements CommandLineRunner {
         createDefaultPersonTypes();
     }
 
-    private void createDefaultPersonTypes() {
-        createDefaultPersonType("student", Arrays.asList(
+    @Transactional
+    protected void createDefaultPersonTypes() {
+        List<RequiredAttribute> commonAttributes = getCommonAttributes();
+
+        createDefaultPersonType("student", combineAttributes(commonAttributes, Arrays.asList(
                 new RequiredAttribute("universityName", AttributeType.STRING),
                 new RequiredAttribute("studyYear", AttributeType.INTEGER),
                 new RequiredAttribute("fieldOfStudy", AttributeType.STRING),
                 new RequiredAttribute("scholarshipAmount", AttributeType.DOUBLE)
-        ));
+        )));
 
-        createDefaultPersonType("employee", Arrays.asList(
+        createDefaultPersonType("employee", combineAttributes(commonAttributes, Arrays.asList(
                 new RequiredAttribute("employmentStartDate", AttributeType.DATE),
                 new RequiredAttribute("role", AttributeType.STRING),
                 new RequiredAttribute("salary", AttributeType.DOUBLE)
-        ));
+        )));
 
-        createDefaultPersonType("retiree", Arrays.asList(
+        createDefaultPersonType("retiree", combineAttributes(commonAttributes, Arrays.asList(
                 new RequiredAttribute("pension", AttributeType.DOUBLE),
                 new RequiredAttribute("yearsWorked", AttributeType.INTEGER)
-        ));
+        )));
     }
 
-    private void createDefaultPersonType(String typeName, List<RequiredAttribute> attributes) {
+    private List<RequiredAttribute> getCommonAttributes() {
+        return Arrays.asList(
+                new RequiredAttribute("weight", AttributeType.DOUBLE),
+                new RequiredAttribute("height", AttributeType.DOUBLE),
+                new RequiredAttribute("pesel", AttributeType.STRING),
+                new RequiredAttribute("firstName", AttributeType.STRING),
+                new RequiredAttribute("lastName", AttributeType.STRING),
+                new RequiredAttribute("email", AttributeType.STRING)
+        );
+    }
+
+    private List<RequiredAttribute> combineAttributes(List<RequiredAttribute> commonAttributes, List<RequiredAttribute> specificAttributes) {
+        List<RequiredAttribute> combinedAttributes = specificAttributes.stream().collect(Collectors.toList());
+        combinedAttributes.addAll(commonAttributes);
+        return combinedAttributes;
+    }
+
+    @Transactional
+    protected void createDefaultPersonType(String typeName, List<RequiredAttribute> attributes) {
         personTypeRepository.findByName(typeName).orElseGet(() -> {
-            PersonType newType = new PersonType();
-            newType.setName(typeName);
-            newType.setRequiredAttributes(attributes.stream().map(attr -> {
-                attr.setPersonType(newType);
-                return attr;
+            PersonType personType = new PersonType();
+            personType.setName(typeName);
+            personType.setRequiredAttributes(attributes.stream().map(attr -> {
+                RequiredAttribute managedAttr = new RequiredAttribute(attr.getName(), attr.getAttributeType());
+                managedAttr.setPersonType(personType);
+                return managedAttr;
             }).collect(Collectors.toList()));
-            return personTypeRepository.save(newType);
+            return personTypeRepository.save(personType);
         });
     }
 }

@@ -26,7 +26,6 @@ public class RequiredAttribute implements Serializable {
     @JoinColumn(name = "person_type_id")
     private PersonType personType;
 
-
     public RequiredAttribute(String name, AttributeType attributeType) {
         this.name = name;
         this.attributeType = attributeType;
