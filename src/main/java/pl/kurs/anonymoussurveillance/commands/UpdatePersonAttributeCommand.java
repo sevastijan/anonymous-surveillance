@@ -1,12 +1,12 @@
-package pl.kurs.anonymoussurveillance.dto;
+package pl.kurs.anonymoussurveillance.commands;
 
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
-@Data
-public class PersonAttributeCriteriaDto {
-    private Long id;
+@Getter
+@Setter
+public class UpdatePersonAttributeCommand {
     private String name;
     private String value;
 }

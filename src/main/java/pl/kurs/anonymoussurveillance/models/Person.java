@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.validator.constraints.pl.PESEL;
 
 import java.io.Serializable;
@@ -16,6 +17,7 @@ import java.util.List;
 @NoArgsConstructor
 @Table(name = "person_list")
 @Inheritance(strategy = InheritanceType.JOINED)
+@DynamicUpdate
 public class Person implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -30,6 +32,9 @@ public class Person implements Serializable {
 
     @OneToMany(mappedBy = "person", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PersonAttribute> attributes;
+
+    @Version
+    private Long version;
 
     public Person(PersonType personType, List<PersonAttribute> attributes) {
         this.personType = personType;

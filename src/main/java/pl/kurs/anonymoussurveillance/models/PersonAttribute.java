@@ -1,6 +1,7 @@
 package pl.kurs.anonymoussurveillance.models;
 
 import jakarta.persistence.*;
+import jakarta.persistence.criteria.Root;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
@@ -12,7 +13,7 @@ import java.io.Serializable;
 @Getter
 @NoArgsConstructor
 @Table(name = "person_attributes")
-public class PersonAttribute implements Serializable {
+public class PersonAttribute implements Serializable, RootAware<Person> {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "person_attr_seq")
     @SequenceGenerator(name = "person_attr_seq", sequenceName = "seq_person_attr", initialValue = 1)
@@ -35,5 +36,10 @@ public class PersonAttribute implements Serializable {
         this.type = type;
         this.value = value;
         this.person = person;
+    }
+
+    @Override
+    public Person root() {
+        return person;
     }
 }

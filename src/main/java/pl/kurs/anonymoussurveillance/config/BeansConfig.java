@@ -45,7 +45,6 @@ public class BeansConfig {
         personAttributeTypeMap.addMappings(new PropertyMap<>() {
             @Override
             protected void configure() {
-                map().setId(source.getId());
                 map().setName(source.getName());
                 map().setValue(source.getValue());
             }
