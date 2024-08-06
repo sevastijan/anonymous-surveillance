@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 
 public class PersonSpecification {
-
     public static Specification<Person> createSpecification(PersonSearchCriteriaDto personSearchCriteriaDto) {
         return (root, query, builder) -> {
             List<Predicate> predicates = new ArrayList<>();

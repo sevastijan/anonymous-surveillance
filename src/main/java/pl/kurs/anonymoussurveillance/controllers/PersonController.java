@@ -1,5 +1,6 @@
 package pl.kurs.anonymoussurveillance.controllers;
 
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.cglib.core.Local;
 import org.springframework.data.domain.Page;
@@ -13,8 +14,10 @@ import pl.kurs.anonymoussurveillance.commands.UpdatePersonCommand;
 import pl.kurs.anonymoussurveillance.dto.PersonAttributeCriteriaDto;
 import pl.kurs.anonymoussurveillance.dto.PersonDto;
 import pl.kurs.anonymoussurveillance.dto.PersonSearchCriteriaDto;
+import pl.kurs.anonymoussurveillance.models.EmploymentHistory;
 import pl.kurs.anonymoussurveillance.models.Person;
 import pl.kurs.anonymoussurveillance.repositories.PersonRepository;
+import pl.kurs.anonymoussurveillance.services.EmploymentHistoryService;
 import pl.kurs.anonymoussurveillance.services.PersonService;
 import pl.kurs.anonymoussurveillance.specifications.PersonSpecification;
 
@@ -27,18 +30,14 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/v1/person")
 public class PersonController {
 
     private final PersonRepository personRepository;
     private final ModelMapper modelMapper;
     private final PersonService personService;
-
-    public PersonController(PersonRepository personRepository, ModelMapper modelMapper, PersonService personService) {
-        this.personRepository = personRepository;
-        this.modelMapper = modelMapper;
-        this.personService = personService;
-    }
+    private final EmploymentHistoryService employmentHistoryService;
 
     @GetMapping
     public ResponseEntity<Page<PersonDto>> searchPerson(
@@ -107,4 +106,16 @@ public class PersonController {
 
         return ResponseEntity.status(HttpStatus.OK).body(personDto);
     }
+
+    @PostMapping("/{personId}/employment")
+    //TODO: Create DTO & Command, rething if we really need return whole employment history
+    public ResponseEntity<List<EmploymentHistory>> createNewEmployment(
+            @PathVariable Long personId,
+            @RequestBody EmploymentHistory employmentHistory
+    ) {
+        Person person = employmentHistoryService.createNewEmployment(personId, employmentHistory);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(person.getEmploymentHistory());
+    }
+
 }

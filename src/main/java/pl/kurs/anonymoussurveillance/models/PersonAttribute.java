@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 @Entity
@@ -14,6 +15,9 @@ import java.io.Serializable;
 @NoArgsConstructor
 @Table(name = "person_attributes")
 public class PersonAttribute implements Serializable, RootAware<Person> {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "person_attr_seq")
     @SequenceGenerator(name = "person_attr_seq", sequenceName = "seq_person_attr", initialValue = 1)

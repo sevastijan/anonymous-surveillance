@@ -1,5 +1,6 @@
 package pl.kurs.anonymoussurveillance.controllers;
 
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,15 +14,11 @@ import pl.kurs.anonymoussurveillance.models.PersonType;
 import pl.kurs.anonymoussurveillance.services.PersonTypeService;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/v1/person-type")
 public class PersonTypeController {
-    private PersonTypeService personTypeService;
-    private ModelMapper modelMapper;
-
-    public PersonTypeController(PersonTypeService personTypeService, ModelMapper modelMapper) {
-        this.personTypeService = personTypeService;
-        this.modelMapper = modelMapper;
-    }
+    private final PersonTypeService personTypeService;
+    private final ModelMapper modelMapper;
 
     @PostMapping
     public ResponseEntity<PersonTypeDto> createPersonType(@RequestBody CreatePersonTypeCommand createPersonTypeCommand) {

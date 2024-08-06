@@ -138,6 +138,7 @@ public class ImportService {
                     String attributeValue = record.get(attributeName);
 
                     PersonAttribute personAttribute = new PersonAttribute();
+
                     personAttribute.setName(attributeName);
                     personAttribute.setType(typeAttribute.getAttributeType());
                     personAttribute.setValue(attributeValue);

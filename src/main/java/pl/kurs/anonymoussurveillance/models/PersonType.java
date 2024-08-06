@@ -10,6 +10,7 @@ import org.apache.catalina.User;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
 
@@ -19,6 +20,7 @@ import java.util.List;
 @NoArgsConstructor
 @Table(name = "person_types")
 public class PersonType implements Serializable {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     @Id
