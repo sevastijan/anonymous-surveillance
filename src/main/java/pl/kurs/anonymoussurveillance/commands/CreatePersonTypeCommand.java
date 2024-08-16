@@ -8,7 +8,7 @@ import java.util.List;
 
 @Getter
 @Setter
-public class CreatePersonTypeCommand {
+public class  CreatePersonTypeCommand {
     private String name;
     private List<PersonAttribute> attributes;
 

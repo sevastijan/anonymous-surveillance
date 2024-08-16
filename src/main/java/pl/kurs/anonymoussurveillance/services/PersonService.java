@@ -53,7 +53,7 @@ public class PersonService {
             }
         }
 
-        return personRepository.save(person);
+        return personRepository.saveAndFlush(person);
     }
 
 }

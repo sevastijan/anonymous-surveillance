@@ -17,15 +17,19 @@ import java.time.LocalDateTime;
 @Table(name = "import_status")
 public class ImportStatus implements Serializable {
     private static final long serialVersionUID = 1L;
+
     @Id
     @GeneratedValue
     private Long id;
+
     @Enumerated(EnumType.STRING)
     private Status status;
+
     private LocalDateTime createdDate;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
     private long processedRows;
+
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
     private double rowsPerSecond;

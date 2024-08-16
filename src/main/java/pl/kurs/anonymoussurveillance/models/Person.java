@@ -1,16 +1,15 @@
 package pl.kurs.anonymoussurveillance.models;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicUpdate;
-import org.hibernate.validator.constraints.pl.PESEL;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @Getter
@@ -39,10 +38,35 @@ public class Person implements Serializable {
     private Long version;
 
     @OneToMany(mappedBy = "person", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<EmploymentHistory> employmentHistory;
+    private List<Employment> employment;
 
     public Person(PersonType personType, List<PersonAttribute> attributes) {
         this.personType = personType;
         this.attributes = attributes;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Person person = (Person) o;
+        return Objects.equals(id, person.id) && Objects.equals(personType, person.personType) && Objects.equals(attributes, person.attributes) && Objects.equals(version, person.version) && Objects.equals(employment, person.employment);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, personType, attributes, version, employment);
+    }
+
+    @Override
+    public String toString() {
+        return "Person{" +
+                "id=" + id +
+                ", personType=" + personType +
+                ", attributes=" + attributes +
+                ", version=" + version +
+                ", employment=" + employment +
+                '}';
     }
 }

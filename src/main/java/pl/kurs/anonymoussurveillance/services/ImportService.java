@@ -1,21 +1,20 @@
 package pl.kurs.anonymoussurveillance.services;
 
 import jakarta.annotation.PostConstruct;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import pl.kurs.anonymoussurveillance.models.*;
-import pl.kurs.anonymoussurveillance.repositories.ImportStatusRepository;
-import pl.kurs.anonymoussurveillance.repositories.PersonRepository;
-import pl.kurs.anonymoussurveillance.repositories.PersonTypeRepository;
-import pl.kurs.anonymoussurveillance.repositories.PersonAttributeRepository;
+import pl.kurs.anonymoussurveillance.repositories.*;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -29,6 +28,7 @@ public class ImportService {
     private final PersonRepository personRepository;
     private final PersonTypeRepository personTypeRepository;
     private final PersonAttributeRepository personAttributeRepository;
+    private final EmploymentRepository employmentRepository;
     private ExecutorService executorService;
     private Future<?> currentImportTask;
 
@@ -77,7 +77,7 @@ public class ImportService {
         return importStatus.getId();
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<Person> processFile(MultipartFile file, ImportStatus importStatus) throws Exception {
         List<Person> personList = new ArrayList<>();
 
@@ -111,13 +111,14 @@ public class ImportService {
     public List<Person> processBatch(List<CSVRecord> batch, ImportStatus importStatus) {
         List<Person> personList = new ArrayList<>();
         List<PersonAttribute> personAttributes = new ArrayList<>();
+        List<Employment> employmentList = new ArrayList<>();
 
         for (CSVRecord record : batch) {
             String type = record.get("type");
             Optional<PersonType> personTypeOpt = personTypeRepository.findByName(type);
 
             if (personTypeOpt.isEmpty()) {
-                throw new IllegalArgumentException("Unknown type: " + type);
+                throw new IllegalArgumentException("Unknown person type: " + type);
             }
 
             PersonType personType = personTypeOpt.get();
@@ -127,8 +128,30 @@ public class ImportService {
             }
             personType.getRequiredAttributes().size();
 
+            //TODO factory for creating new person?
             Person person = new Person();
             person.setPersonType(personType);
+
+            if (type.equalsIgnoreCase("employee")) {
+                int employmentCount = 1;
+                while (true) {
+                    String employmentStartDateKey = "employmentStartDate-" + employmentCount;
+                    if (!record.isMapped(employmentStartDateKey) || record.get(employmentStartDateKey).isEmpty()) {
+                        break;
+                    }
+
+                    Employment employment = new Employment();
+                    employment.setStartDate(LocalDate.parse(record.get(employmentStartDateKey)));
+                    employment.setEndDate(LocalDate.parse(record.get("employmentEndDate-" + employmentCount)));
+                    employment.setCompanyName(record.get("companyName-" + employmentCount));
+                    employment.setRole(record.get("role-" + employmentCount));
+                    employment.setSalary(new BigDecimal(record.get("salary-" + employmentCount)));
+                    employment.setPerson(person);
+
+                    employmentList.add(employment);
+                    employmentCount++;
+                }
+            }
 
             personList.add(person);
 
@@ -150,6 +173,7 @@ public class ImportService {
 
         personRepository.saveAll(personList);
         personAttributeRepository.saveAll(personAttributes);
+        employmentRepository.saveAll(employmentList);
 
         //TODO: add importStatus update
 

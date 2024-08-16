@@ -2,7 +2,6 @@ package pl.kurs.anonymoussurveillance.controllers;
 
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.cglib.core.Local;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -11,13 +10,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.kurs.anonymoussurveillance.commands.UpdatePersonCommand;
+import pl.kurs.anonymoussurveillance.dto.ErrorResponseDto;
 import pl.kurs.anonymoussurveillance.dto.PersonAttributeCriteriaDto;
 import pl.kurs.anonymoussurveillance.dto.PersonDto;
 import pl.kurs.anonymoussurveillance.dto.PersonSearchCriteriaDto;
-import pl.kurs.anonymoussurveillance.models.EmploymentHistory;
+import pl.kurs.anonymoussurveillance.exceptions.EmploymentDateOverlapException;
+import pl.kurs.anonymoussurveillance.exceptions.PersonNotFoundException;
+import pl.kurs.anonymoussurveillance.models.Employment;
 import pl.kurs.anonymoussurveillance.models.Person;
 import pl.kurs.anonymoussurveillance.repositories.PersonRepository;
-import pl.kurs.anonymoussurveillance.services.EmploymentHistoryService;
+import pl.kurs.anonymoussurveillance.services.EmploymentService;
 import pl.kurs.anonymoussurveillance.services.PersonService;
 import pl.kurs.anonymoussurveillance.specifications.PersonSpecification;
 
@@ -37,7 +39,7 @@ public class PersonController {
     private final PersonRepository personRepository;
     private final ModelMapper modelMapper;
     private final PersonService personService;
-    private final EmploymentHistoryService employmentHistoryService;
+    private final EmploymentService employmentService;
 
     @GetMapping
     public ResponseEntity<Page<PersonDto>> searchPerson(
@@ -52,8 +54,6 @@ public class PersonController {
         Map<String, Number[]> numberRange = new HashMap<>();
         Map<String, LocalDate[]> dateRange = new HashMap<>();
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-
 
         searchParams.forEach((key, value) -> {
             if (!key.equals("page") && !key.equals("size")) {
@@ -95,7 +95,6 @@ public class PersonController {
                 .collect(Collectors.toList());
 
         return ResponseEntity.status(HttpStatus.OK).body(new PageImpl<>(personDtoList, pageable, personListPage.getTotalElements()));
-
     }
 
     @PutMapping()
@@ -109,13 +108,58 @@ public class PersonController {
 
     @PostMapping("/{personId}/employment")
     //TODO: Create DTO & Command, rething if we really need return whole employment history
-    public ResponseEntity<List<EmploymentHistory>> createNewEmployment(
+    public ResponseEntity<List<Employment>> createNewEmployment(
             @PathVariable Long personId,
-            @RequestBody EmploymentHistory employmentHistory
+            @RequestBody Employment employment
     ) {
-        Person person = employmentHistoryService.createNewEmployment(personId, employmentHistory);
+        Person person = employmentService.createNewEmployment(personId, employment);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(person.getEmploymentHistory());
+        return ResponseEntity.status(HttpStatus.CREATED).body(person.getEmployment());
+    }
+
+
+    @PutMapping("/{personId}/employment/{employmentId}")
+    //TODO: Create DTO & Command
+    public ResponseEntity<Employment> updateEmployment(
+            @PathVariable Long personId,
+            @PathVariable Long employmentId,
+            @RequestBody Employment employment
+    ) {
+        Employment updatedPosition = employmentService.updateEmploymentHistory(personId, employmentId, employment);
+
+
+        return ResponseEntity.status(HttpStatus.OK).body(updatedPosition);
+    }
+
+    @DeleteMapping("/{personId}/employment/{employmentId}")
+    //TODO: Create DTO & Command
+    public ResponseEntity<Void> updateEmployment(
+            @PathVariable Long personId,
+            @PathVariable Long employmentId
+    ) {
+        employmentService.removeEmployment(personId, employmentId);
+
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @ExceptionHandler(PersonNotFoundException.class)
+    public ResponseEntity<ErrorResponseDto> handlePersonNotFoundException(PersonNotFoundException exception) {
+        ErrorResponseDto errorResponse = new ErrorResponseDto(
+                HttpStatus.NOT_FOUND.value(),
+                exception.getMessage()
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
+    @ExceptionHandler(EmploymentDateOverlapException.class)
+    public ResponseEntity<ErrorResponseDto> handleEmploymentDateOverlapException(EmploymentDateOverlapException exception) {
+        ErrorResponseDto errorResponse = new ErrorResponseDto(
+                HttpStatus.CONFLICT.value(),
+                exception.getMessage()
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }
 
 }

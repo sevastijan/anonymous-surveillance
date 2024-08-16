@@ -14,8 +14,8 @@ import java.time.LocalDate;
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "employment_history")
-public class EmploymentHistory implements Serializable {
+@Table(name = "employment_list")
+public class Employment implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
@@ -32,7 +32,7 @@ public class EmploymentHistory implements Serializable {
     @JoinColumn(name = "person_id", nullable = false)
     private Person person;
 
-    public EmploymentHistory(LocalDate startDate, LocalDate endDate, String companyName, String role, BigDecimal salary, Person person) {
+    public Employment(LocalDate startDate, LocalDate endDate, String companyName, String role, BigDecimal salary, Person person) {
         this.startDate = startDate;
         this.endDate = endDate;
         this.companyName = companyName;
