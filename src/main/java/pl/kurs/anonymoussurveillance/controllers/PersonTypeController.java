@@ -21,6 +21,7 @@ public class PersonTypeController {
     private final ModelMapper modelMapper;
 
     @PostMapping
+    //TODO: Add validation
     public ResponseEntity<PersonTypeDto> createPersonType(@RequestBody CreatePersonTypeCommand createPersonTypeCommand) {
         PersonType personType = modelMapper.map(createPersonTypeCommand, PersonType.class);
 

@@ -4,6 +4,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import pl.kurs.anonymoussurveillance.exceptions.EmploymentDateOverlapException;
+import pl.kurs.anonymoussurveillance.exceptions.EmploymentNotFoundException;
 import pl.kurs.anonymoussurveillance.exceptions.PersonNotFoundException;
 import pl.kurs.anonymoussurveillance.models.Employment;
 import pl.kurs.anonymoussurveillance.models.Person;
@@ -18,7 +19,6 @@ public class EmploymentService {
     private final PersonRepository personRepository;
     private final EmploymentRepository employmentRepository;
 
-    @Transactional
     public Person createNewEmployment(Long personId, Employment employment) {
         Person person = personRepository.findById(personId)
                 .orElseThrow(() -> new PersonNotFoundException("Person with id:" + personId + " not found."));
@@ -33,14 +33,13 @@ public class EmploymentService {
         return person;
     }
 
-    @Transactional
+
     public Employment updateEmploymentHistory(Long personId, Long employmentId, Employment employment) {
         Employment selectedEmployment = employmentRepository.findByIdAndPersonId(employmentId, personId)
-                .orElseThrow(() -> new IllegalArgumentException("Employment history with id:" + employmentId + " not found."));
+                .orElseThrow(() -> new EmploymentNotFoundException(employmentId, personId));
 
         if(hasOverlapEmploymentDates(selectedEmployment.getPerson().getEmployment(), employment)) {
-            //TODO: add custom exception
-            throw new IllegalArgumentException("Can't add new employment because dates overlap with an existing position");
+            throw new EmploymentDateOverlapException("Can't add new employment because dates overlap with an existing position");
         }
 
         selectedEmployment.setCompanyName(employment.getCompanyName());
@@ -52,11 +51,9 @@ public class EmploymentService {
         return employmentRepository.save(selectedEmployment);
     }
 
-    @Transactional
     public void removeEmployment(Long personId, Long employmentId) {
-        //TODO: add custom exception
         Employment selectedEmployment = employmentRepository.findByIdAndPersonId(employmentId, personId)
-                .orElseThrow(() -> new IllegalArgumentException("Employment history with id:" + employmentId + " not found."));
+                .orElseThrow(() -> new EmploymentNotFoundException(employmentId, personId));
 
         employmentRepository.delete(selectedEmployment);
     }

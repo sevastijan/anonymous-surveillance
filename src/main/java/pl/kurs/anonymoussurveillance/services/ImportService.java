@@ -39,6 +39,7 @@ public class ImportService {
 
     public Long importFile(MultipartFile file) {
         //TODO: make this method transactional
+        //TODO: fix issue with pesel attribute (its assign number with -)
         if (currentImportTask != null && !currentImportTask.isDone()) {
             throw new IllegalStateException("An import is already in progress");
         }

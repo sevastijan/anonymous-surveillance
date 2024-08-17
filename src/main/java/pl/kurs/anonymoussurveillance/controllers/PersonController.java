@@ -8,11 +8,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import pl.kurs.anonymoussurveillance.commands.CreateEmploymentCommand;
+import pl.kurs.anonymoussurveillance.commands.UpdateEmploymentCommand;
 import pl.kurs.anonymoussurveillance.commands.UpdatePersonCommand;
 import pl.kurs.anonymoussurveillance.dto.*;
 import pl.kurs.anonymoussurveillance.exceptions.EmploymentDateOverlapException;
+import pl.kurs.anonymoussurveillance.exceptions.EmploymentNotFoundException;
 import pl.kurs.anonymoussurveillance.exceptions.PersonNotFoundException;
 import pl.kurs.anonymoussurveillance.models.Employment;
 import pl.kurs.anonymoussurveillance.models.Person;
@@ -96,6 +99,7 @@ public class PersonController {
     }
 
     @PutMapping()
+    @Transactional
     public ResponseEntity<PersonDto> updatePerson(@RequestBody UpdatePersonCommand updatePersonCommand) {
         Person person = personService.updatePerson(updatePersonCommand);
 
@@ -105,6 +109,7 @@ public class PersonController {
     }
 
     @PostMapping("/{personId}/employment")
+    @Transactional
     public ResponseEntity<List<EmploymentDto>> createNewEmployment(
             @PathVariable Long personId,
             @RequestBody CreateEmploymentCommand createEmploymentCommand
@@ -121,21 +126,22 @@ public class PersonController {
 
 
     @PutMapping("/{personId}/employment/{employmentId}")
-    //TODO: Create DTO & Command
-    public ResponseEntity<Employment> updateEmployment(
+    @Transactional
+    public ResponseEntity<EmploymentDto> updateEmployment(
             @PathVariable Long personId,
             @PathVariable Long employmentId,
-            @RequestBody Employment employment
+            @RequestBody UpdateEmploymentCommand updateEmploymentCommand
     ) {
+        Employment employment = modelMapper.map(updateEmploymentCommand, Employment.class);
         Employment updatedPosition = employmentService.updateEmploymentHistory(personId, employmentId, employment);
+        EmploymentDto employmentDto = modelMapper.map(updatedPosition, EmploymentDto.class);
 
-
-        return ResponseEntity.status(HttpStatus.OK).body(updatedPosition);
+        return ResponseEntity.status(HttpStatus.OK).body(employmentDto);
     }
 
     @DeleteMapping("/{personId}/employment/{employmentId}")
-    //TODO: Create DTO & Command
-    public ResponseEntity<Void> updateEmployment(
+    @Transactional
+    public ResponseEntity<Void> deleteEmployment(
             @PathVariable Long personId,
             @PathVariable Long employmentId
     ) {
@@ -151,7 +157,17 @@ public class PersonController {
                 exception.getMessage()
         );
 
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    @ExceptionHandler(EmploymentNotFoundException.class)
+    public ResponseEntity<ErrorDto> handleEmploymentNotFoundException(EmploymentNotFoundException exception) {
+        ErrorDto errorResponse = new ErrorDto(
+                HttpStatus.NOT_FOUND.value(),
+                exception.getMessage()
+        );
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
     @ExceptionHandler(EmploymentDateOverlapException.class)
