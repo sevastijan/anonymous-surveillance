@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 
 @Data
 @AllArgsConstructor
-public class AuthenticationResponseDto {
+public class AuthenticationDto {
     private String message;
     private long timestamp;
     private int status;

@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 @Component
 public class DataInitializer implements CommandLineRunner {
     /**
-     * this file is (hall of shame) kind of helper to developing locally to avoid creating default entity values
+     * this file is kind of initializer to developing locally, creating default values
      */
 
     @Autowired

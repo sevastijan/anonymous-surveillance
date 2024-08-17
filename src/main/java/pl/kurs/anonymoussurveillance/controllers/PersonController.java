@@ -9,11 +9,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import pl.kurs.anonymoussurveillance.commands.CreateEmploymentCommand;
 import pl.kurs.anonymoussurveillance.commands.UpdatePersonCommand;
-import pl.kurs.anonymoussurveillance.dto.ErrorResponseDto;
-import pl.kurs.anonymoussurveillance.dto.PersonAttributeCriteriaDto;
-import pl.kurs.anonymoussurveillance.dto.PersonDto;
-import pl.kurs.anonymoussurveillance.dto.PersonSearchCriteriaDto;
+import pl.kurs.anonymoussurveillance.dto.*;
 import pl.kurs.anonymoussurveillance.exceptions.EmploymentDateOverlapException;
 import pl.kurs.anonymoussurveillance.exceptions.PersonNotFoundException;
 import pl.kurs.anonymoussurveillance.models.Employment;
@@ -107,14 +105,18 @@ public class PersonController {
     }
 
     @PostMapping("/{personId}/employment")
-    //TODO: Create DTO & Command, rething if we really need return whole employment history
-    public ResponseEntity<List<Employment>> createNewEmployment(
+    public ResponseEntity<List<EmploymentDto>> createNewEmployment(
             @PathVariable Long personId,
-            @RequestBody Employment employment
+            @RequestBody CreateEmploymentCommand createEmploymentCommand
     ) {
+        Employment employment = modelMapper.map(createEmploymentCommand, Employment.class);
         Person person = employmentService.createNewEmployment(personId, employment);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(person.getEmployment());
+        List<EmploymentDto> employmentDtoList = person.getEmployment().stream()
+                .map(e -> modelMapper.map(e, EmploymentDto.class))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(employmentDtoList);
     }
 
 
@@ -143,8 +145,8 @@ public class PersonController {
     }
 
     @ExceptionHandler(PersonNotFoundException.class)
-    public ResponseEntity<ErrorResponseDto> handlePersonNotFoundException(PersonNotFoundException exception) {
-        ErrorResponseDto errorResponse = new ErrorResponseDto(
+    public ResponseEntity<ErrorDto> handlePersonNotFoundException(PersonNotFoundException exception) {
+        ErrorDto errorResponse = new ErrorDto(
                 HttpStatus.NOT_FOUND.value(),
                 exception.getMessage()
         );
@@ -153,8 +155,8 @@ public class PersonController {
     }
 
     @ExceptionHandler(EmploymentDateOverlapException.class)
-    public ResponseEntity<ErrorResponseDto> handleEmploymentDateOverlapException(EmploymentDateOverlapException exception) {
-        ErrorResponseDto errorResponse = new ErrorResponseDto(
+    public ResponseEntity<ErrorDto> handleEmploymentDateOverlapException(EmploymentDateOverlapException exception) {
+        ErrorDto errorResponse = new ErrorDto(
                 HttpStatus.CONFLICT.value(),
                 exception.getMessage()
         );
