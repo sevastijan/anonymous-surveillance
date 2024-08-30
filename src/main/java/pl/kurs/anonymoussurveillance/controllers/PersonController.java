@@ -2,6 +2,7 @@ package pl.kurs.anonymoussurveillance.controllers;
 
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -43,6 +44,7 @@ public class PersonController {
     private final EmploymentService employmentService;
 
     @GetMapping
+    @Transactional(readOnly = true)
     public ResponseEntity<Page<PersonDto>> searchPerson(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "100") int size,
@@ -95,11 +97,16 @@ public class PersonController {
         List<PersonDto> personDtoList = personListPage.getContent().stream().map(p -> modelMapper.map(p, PersonDto.class))
                 .collect(Collectors.toList());
 
+        /*
+            Serializing PageImpl instances as-is is not supported, meaning that there is no guarantee about the stability of the resulting JSON structure!
+//	        For a stable JSON structure, please use Spring Data's PagedModel (globally via @EnableSpringDataWebSupport(pageSerializationMode = VIA_DTO))
+	        or Spring HATEOAS and Spring Data's PagedResourcesAssembler as documented in https://docs.spring.io/spring-data/commons/reference/repositories/core-extensions.html#core.web.pageables.
+         */
         return ResponseEntity.status(HttpStatus.OK).body(new PageImpl<>(personDtoList, pageable, personListPage.getTotalElements()));
     }
 
     @PutMapping()
-    @Transactional
+//    @Transactional
     public ResponseEntity<PersonDto> updatePerson(@RequestBody UpdatePersonCommand updatePersonCommand) {
         Person person = personService.updatePerson(updatePersonCommand);
 
@@ -178,6 +185,16 @@ public class PersonController {
         );
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorDto> handleOptimisticLockingFailureException(OptimisticLockingFailureException exception) {
+        ErrorDto errorResponse = new ErrorDto(
+                HttpStatus.LOCKED.value(),
+                exception.getMessage()
+        );
+
+        return ResponseEntity.status(HttpStatus.LOCKED).body(errorResponse);
     }
 
 }

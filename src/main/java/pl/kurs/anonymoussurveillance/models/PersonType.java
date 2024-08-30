@@ -13,6 +13,7 @@ import org.springframework.data.annotation.CreatedDate;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @Getter
@@ -36,5 +37,27 @@ public class PersonType implements Serializable {
     public PersonType(String name, List<RequiredAttribute> requiredAttributes) {
         this.name = name;
         this.requiredAttributes = requiredAttributes;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        PersonType that = (PersonType) o;
+        return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(requiredAttributes, that.requiredAttributes);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, requiredAttributes);
+    }
+
+    @Override
+    public String toString() {
+        return "PersonType{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", requiredAttributes=" + requiredAttributes +
+                '}';
     }
 }

@@ -14,7 +14,6 @@ public class PersonDto {
     private String lastName;
     private String pesel;
     private String email;
-    private PersonTypeDto personType;
     private Long version;
     private List<PersonAttributeDto> attributes;
 }

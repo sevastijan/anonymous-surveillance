@@ -31,7 +31,7 @@ public class PersonAttribute implements Serializable, RootAware<Person> {
 
     private String value;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "person_id")
     private Person person;
 
@@ -45,5 +45,16 @@ public class PersonAttribute implements Serializable, RootAware<Person> {
     @Override
     public Person root() {
         return person;
+    }
+
+    @Override
+    public String toString() {
+        return "PersonAttribute{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", type=" + type +
+                ", value='" + value + '\'' +
+                ", person=" + person +
+                '}';
     }
 }

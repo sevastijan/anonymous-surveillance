@@ -51,4 +51,15 @@ public class User implements Serializable, UserDetails {
         return lockoutEndTime == null || LocalDateTime.now().isAfter(lockoutEndTime);
     }
 
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                ", failedLoginAttempts=" + failedLoginAttempts +
+                ", lockoutEndTime=" + lockoutEndTime +
+                ", roles=" + roles +
+                '}';
+    }
 }

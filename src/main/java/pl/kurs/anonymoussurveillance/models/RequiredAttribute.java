@@ -25,7 +25,7 @@ public class RequiredAttribute implements Serializable {
     private String name;
     private AttributeType attributeType;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "person_type_id")
     private PersonType personType;
 
@@ -38,5 +38,15 @@ public class RequiredAttribute implements Serializable {
         this.name = name;
         this.attributeType = attributeType;
         this.personType = personType;
+    }
+
+    @Override
+    public String toString() {
+        return "RequiredAttribute{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", attributeType=" + attributeType +
+                ", personType=" + personType +
+                '}';
     }
 }

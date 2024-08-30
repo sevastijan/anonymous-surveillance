@@ -43,4 +43,18 @@ public class ImportStatus implements Serializable {
         this.errorMessage = errorMessage;
         this.rowsPerSecond = rowsPerSecond;
     }
+
+    @Override
+    public String toString() {
+        return "ImportStatus{" +
+                "id=" + id +
+                ", status=" + status +
+                ", createdDate=" + createdDate +
+                ", startDate=" + startDate +
+                ", endDate=" + endDate +
+                ", processedRows=" + processedRows +
+                ", errorMessage='" + errorMessage + '\'' +
+                ", rowsPerSecond=" + rowsPerSecond +
+                '}';
+    }
 }

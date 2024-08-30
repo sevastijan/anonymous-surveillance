@@ -2,11 +2,11 @@ package pl.kurs.anonymoussurveillance.services;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.sql.Update;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import pl.kurs.anonymoussurveillance.commands.UpdatePersonAttributeCommand;
 import pl.kurs.anonymoussurveillance.commands.UpdatePersonCommand;
 import pl.kurs.anonymoussurveillance.models.Person;
@@ -19,13 +19,15 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+
 public class PersonService {
     private final PersonRepository personRepository;
-    public final EntityManager entityManager;
+    private final EntityManager entityManager;
+
 
     @Transactional
     public Person updatePerson(UpdatePersonCommand updatePersonCommand) {
-        Person person = personRepository.findById(updatePersonCommand.getId()).orElseThrow(
+        Person person = personRepository.findByIdWithAttributes(updatePersonCommand.getId()).orElseThrow(
                 () -> new IllegalArgumentException("Person not found"));
 
         if (!person.getVersion().equals(updatePersonCommand.getVersion())) {
@@ -53,7 +55,7 @@ public class PersonService {
             }
         }
 
-        return personRepository.saveAndFlush(person);
+        return person;
     }
 
 }

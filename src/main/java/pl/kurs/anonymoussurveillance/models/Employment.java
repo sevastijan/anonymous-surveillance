@@ -40,4 +40,14 @@ public class Employment implements Serializable {
         this.salary = salary;
         this.person = person;
     }
+
+    public Employment(Long id, LocalDate startDate, LocalDate endDate, String companyName, String role, BigDecimal salary, Person person) {
+        this.id = id;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.companyName = companyName;
+        this.role = role;
+        this.salary = salary;
+        this.person = person;
+    }
 }
