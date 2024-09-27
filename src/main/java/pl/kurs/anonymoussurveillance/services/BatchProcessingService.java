@@ -8,11 +8,16 @@ import pl.kurs.anonymoussurveillance.repositories.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveTask;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -27,6 +32,7 @@ public class BatchProcessingService extends RecursiveTask<List<Person>> {
     private final EmploymentRepository employmentRepository;
     private final BatchProcessingServiceFactory batchProcessingServiceFactory;
     private Map<String, PersonType> personTypeCache;
+    private static final AtomicBoolean hasErrorOccurred = new AtomicBoolean(false);
 
 
     public BatchProcessingService(List<CSVRecord> records, ImportStatus importStatus, int start, int end, PersonRepository personRepository, PersonTypeRepository personTypeRepository, PersonAttributeRepository personAttributeRepository, EmploymentRepository employmentRepository, ImportStatusRepository importStatusRepository, BatchProcessingServiceFactory batchProcessingServiceFactory) {
@@ -74,21 +80,59 @@ public class BatchProcessingService extends RecursiveTask<List<Person>> {
 
             if (type.equalsIgnoreCase("employee")) {
                 int employmentCount = 1;
+
                 while (true) {
                     String employmentStartDateKey = "employmentStartDate-" + employmentCount;
                     if (!record.isMapped(employmentStartDateKey) || record.get(employmentStartDateKey).isEmpty()) {
                         break;
                     }
 
+                    LocalDate startDate;
+                    try {
+                        startDate = LocalDate.parse(record.get(employmentStartDateKey));
+                    } catch (Exception e) {
+                        throw new IllegalArgumentException("Invalid employment start date format");
+                    }
+
+                    String employmentEndDateKey = "employmentEndDate-" + employmentCount;
+                    LocalDate endDate;
+                    try {
+                        endDate = LocalDate.parse(record.get(employmentEndDateKey));
+                    } catch (Exception e) {
+                        throw new IllegalArgumentException("Invalid employment end date format");
+                    }
+
+                    if (endDate.isBefore(startDate)) {
+                        throw new IllegalArgumentException("Employment end date cannot be before start date");
+                    }
+
+                    String companyName = record.get("companyName-" + employmentCount);
+                    if (companyName == null || companyName.trim().isEmpty()) {
+                        throw new IllegalArgumentException("Company name is required");
+                    }
+
+                    String role = record.get("role-" + employmentCount);
+                    if (role == null || role.trim().isEmpty()) {
+                        throw new IllegalArgumentException("Role is required");
+                    }
+
+                    BigDecimal salary;
+                    try {
+                        salary = new BigDecimal(record.get("salary-" + employmentCount));
+                    } catch (NumberFormatException e) {
+                        throw new IllegalArgumentException("Invalid salary format");
+                    }
+
                     Employment employment = new Employment();
-                    employment.setStartDate(LocalDate.parse(record.get(employmentStartDateKey)));
-                    employment.setEndDate(LocalDate.parse(record.get("employmentEndDate-" + employmentCount)));
-                    employment.setCompanyName(record.get("companyName-" + employmentCount));
-                    employment.setRole(record.get("role-" + employmentCount));
-                    employment.setSalary(new BigDecimal(record.get("salary-" + employmentCount)));
+                    employment.setStartDate(startDate);
+                    employment.setEndDate(endDate);
+                    employment.setCompanyName(companyName);
+                    employment.setRole(role);
+                    employment.setSalary(salary);
                     employment.setPerson(person);
 
                     employmentList.add(employment);
+
                     employmentCount++;
                 }
             }
@@ -99,6 +143,10 @@ public class BatchProcessingService extends RecursiveTask<List<Person>> {
                 String attributeName = typeAttribute.getName();
                 if (record.isMapped(attributeName)) {
                     String attributeValue = record.get(attributeName);
+
+                    if(!validateAttributeType(attributeValue, typeAttribute.getAttributeType())) {
+                        throw new IllegalArgumentException("Invalid value '" + attributeValue + "' for attribute '" + attributeName + "' of type " + typeAttribute.getAttributeType());
+                    }
 
                     PersonAttribute personAttribute = new PersonAttribute();
 
@@ -115,8 +163,44 @@ public class BatchProcessingService extends RecursiveTask<List<Person>> {
         personAttributeRepository.saveAll(personAttributes);
         employmentRepository.saveAll(employmentList);
 
-        //TODO: add importStatus update
-
         return personList;
     }
+
+    private boolean validateAttributeType(String attributeValue, AttributeType attributeType) {
+        switch (attributeType) {
+            case STRING:
+                return true;
+            case INTEGER:
+                try {
+                    Integer.parseInt(attributeValue);
+                } catch (NumberFormatException e) {
+                    return false;
+                }
+            case DOUBLE:
+                try {
+                    Double.parseDouble(attributeValue);
+                    return true;
+                } catch (NumberFormatException e) {
+                    return false;
+                }
+            case BIG_DECIMAL:
+                try {
+                    new BigDecimal(attributeValue);
+                    return true;
+                } catch (NumberFormatException e) {
+                    return false;
+                }
+            case DATE:
+                try {
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                    LocalDateTime.parse(attributeValue, formatter);
+                    return true;
+                } catch (DateTimeParseException e) {
+                    return false;
+                }
+            default:
+                return false;
+        }
+    }
+
 }

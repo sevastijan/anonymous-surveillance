@@ -46,7 +46,6 @@ public class RequiredAttribute implements Serializable {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", attributeType=" + attributeType +
-                ", personType=" + personType +
                 '}';
     }
 }

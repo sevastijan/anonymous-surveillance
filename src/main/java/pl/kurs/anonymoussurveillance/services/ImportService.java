@@ -19,6 +19,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,9 +28,11 @@ import java.util.concurrent.*;
 public class ImportService {
     private final ImportStatusRepository importStatusRepository;
     private final BatchProcessingServiceFactory batchProcessingServiceFactory;
+    private final PersonTypeRepository personTypeRepository;
     private ForkJoinPool forkJoinPool;
 
     private Future<?> currentImportTask;
+    private Map<String, PersonType> attributresValidationMap;
 
     @PostConstruct
     public void init() {
@@ -39,6 +43,10 @@ public class ImportService {
         if (currentImportTask != null && !currentImportTask.isDone()) {
             throw new IllegalStateException("An import is already in progress");
         }
+
+        attributresValidationMap = personTypeRepository.findAll().stream()
+                .collect(Collectors.toMap(PersonType::getName, Function.identity()));
+
 
         ImportStatus importStatus = new ImportStatus();
         importStatus.setStatus(Status.PENDING);
