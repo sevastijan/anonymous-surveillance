@@ -1,10 +1,13 @@
 package pl.kurs.anonymoussurveillance.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.validator.constraints.pl.PESEL;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -26,6 +29,11 @@ public class Person implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true, nullable = false)
+    @Size(min = 11, max = 11, message = "PESEL must be exactly 11 digits")
+    @Pattern(regexp = "\\d{11}", message = "PESEL must contain only digits")
+    @PESEL
+    private String pesel;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "person_type_id", nullable = false)

@@ -1,11 +1,11 @@
 package pl.kurs.anonymoussurveillance.commands;
 
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class UpdatePersonAttributeCommand {
     private String name;
     private String value;

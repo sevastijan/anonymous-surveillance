@@ -39,17 +39,19 @@ public class PersonSpecification {
                     Number[] range = entry.getValue();
                     Join<Person, PersonAttribute> attributesJoin = root.join("attributes");
                     Predicate attributeNamePredicate = builder.equal(attributesJoin.get("name"), attributeName);
+                    predicates.add(attributeNamePredicate);
 
                     if (range[0] != null) {
                         Predicate minPredicate = createNumericPredicate(builder, attributesJoin.get("value"), range[0], true);
-                        predicates.add(builder.and(attributeNamePredicate, minPredicate));
+                        predicates.add(minPredicate);
                     }
                     if (range[1] != null) {
                         Predicate maxPredicate = createNumericPredicate(builder, attributesJoin.get("value"), range[1], false);
-                        predicates.add(builder.and(attributeNamePredicate, maxPredicate));
+                        predicates.add(maxPredicate);
                     }
                 }
             }
+
 
             if (personSearchCriteriaDto.getDateRange() != null && !personSearchCriteriaDto.getDateRange().isEmpty()) {
                 for (Map.Entry<String, LocalDate[]> entry : personSearchCriteriaDto.getDateRange().entrySet()) {
@@ -57,37 +59,46 @@ public class PersonSpecification {
                     LocalDate[] range = entry.getValue();
                     Join<Person, PersonAttribute> attributesJoin = root.join("attributes");
                     Predicate attributeNamePredicate = builder.equal(attributesJoin.get("name"), attributeName);
+                    predicates.add(attributeNamePredicate);
+
+                    Expression<LocalDate> datePath = attributesJoin.get("value").as(LocalDate.class);
 
                     if (range[0] != null) {
-                        Predicate minPredicate = builder.greaterThanOrEqualTo(attributesJoin.get("value").as(LocalDate.class), range[0]);
-                        predicates.add(builder.and(attributeNamePredicate, minPredicate));
+                        Predicate minPredicate = builder.greaterThanOrEqualTo(datePath, range[0]);
+                        predicates.add(minPredicate);
                     }
                     if (range[1] != null) {
-                        Predicate maxPredicate = builder.lessThanOrEqualTo(attributesJoin.get("value").as(LocalDate.class), range[1]);
-                        predicates.add(builder.and(attributeNamePredicate, maxPredicate));
+                        Predicate maxPredicate = builder.lessThanOrEqualTo(datePath, range[1]);
+                        predicates.add(maxPredicate);
                     }
                 }
             }
 
-            return builder.and(predicates.toArray(new Predicate[0]));
+
+            if (predicates.isEmpty()) {
+                return builder.conjunction();
+            } else {
+                return builder.and(predicates.toArray(new Predicate[0]));
+            }
         };
     }
 
-    private static Predicate createNumericPredicate(CriteriaBuilder builder, Expression<Number> path, Number value, boolean isMin) {
+    private static Predicate createNumericPredicate(CriteriaBuilder builder, Expression<String> path, Number value, boolean isMin) {
         if (value instanceof Integer) {
-            Expression<Integer> intPath = builder.toInteger(path);
+            Expression<Integer> intPath = builder.function("CAST", Integer.class, path);
             return isMin ? builder.greaterThanOrEqualTo(intPath, (Integer) value)
                     : builder.lessThanOrEqualTo(intPath, (Integer) value);
         } else if (value instanceof Double) {
-            Expression<Double> doublePath = builder.toDouble(path);
+            Expression<Double> doublePath = builder.function("CAST", Double.class, path);
             return isMin ? builder.greaterThanOrEqualTo(doublePath, (Double) value)
                     : builder.lessThanOrEqualTo(doublePath, (Double) value);
         } else if (value instanceof BigDecimal) {
-            Expression<BigDecimal> bigDecimalPath = builder.toBigDecimal(path);
+            Expression<BigDecimal> bigDecimalPath = builder.function("CAST", BigDecimal.class, path);
             return isMin ? builder.greaterThanOrEqualTo(bigDecimalPath, (BigDecimal) value)
                     : builder.lessThanOrEqualTo(bigDecimalPath, (BigDecimal) value);
         } else {
             throw new IllegalArgumentException("Unsupported numeric type");
         }
     }
+
 }

@@ -15,31 +15,26 @@ public class PersonTypeService {
     public PersonTypeService(PersonTypeRepository personTypeRepository) {
         this.personTypeRepository = personTypeRepository;
     }
+
     public PersonType savePersonType(PersonType personType) {
-        for(RequiredAttribute attribute : personType.getRequiredAttributes()) {
-            if(attribute.getName() == null || attribute.getName().isEmpty()) {
+        for (RequiredAttribute attribute : personType.getRequiredAttributes()) {
+            if (attribute.getName() == null || attribute.getName().isEmpty()) {
                 throw new IllegalArgumentException("Required attribute must have name");
             }
-
-            if(attribute.getAttributeType() == null) {
+            if (attribute.getAttributeType() == null) {
                 throw new IllegalArgumentException("Required attribute must have type");
             }
-
-            boolean typeIsVaild = false;
+            boolean typeIsValid = false;
             for (AttributeType type : AttributeType.values()) {
-                if(attribute.getAttributeType() == type) {
-                    typeIsVaild = true;
+                if (attribute.getAttributeType() == type) {
+                    typeIsValid = true;
                     break;
                 }
             }
-
-            if(!typeIsVaild) {
-                throw new IllegalArgumentException("Invaild attribute type: " + attribute.getAttributeType());
+            if (!typeIsValid) {
+                throw new IllegalArgumentException("Invalid attribute type: " + attribute.getAttributeType());
             }
         }
-
         return personTypeRepository.save(personType);
     }
-
-
 }

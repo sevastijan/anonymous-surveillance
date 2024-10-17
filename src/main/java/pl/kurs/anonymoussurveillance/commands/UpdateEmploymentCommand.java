@@ -1,11 +1,14 @@
 package pl.kurs.anonymoussurveillance.commands;
 
-import lombok.Data;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class UpdateEmploymentCommand {
     private Long id;
     private LocalDate startDate;

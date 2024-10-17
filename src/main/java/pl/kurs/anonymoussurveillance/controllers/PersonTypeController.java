@@ -26,6 +26,10 @@ public class PersonTypeController {
 
     @PostMapping
     public ResponseEntity<PersonTypeDto> createPersonType(@RequestBody CreatePersonTypeCommand createPersonTypeCommand) {
+        if (createPersonTypeCommand.getAttributes() == null || createPersonTypeCommand.getAttributes().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Required attributes are missing");
+        }
+
         PersonType personType = modelMapper.map(createPersonTypeCommand, PersonType.class);
 
         List<RequiredAttribute> requiredAttributes = createPersonTypeCommand.getAttributes().stream()
@@ -33,10 +37,6 @@ public class PersonTypeController {
                 .collect(Collectors.toList());
 
         personType.setRequiredAttributes(requiredAttributes);
-
-        if(personType.getRequiredAttributes() == null || personType.getRequiredAttributes().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Required attributes are missing");
-        }
 
         personTypeService.savePersonType(personType);
 

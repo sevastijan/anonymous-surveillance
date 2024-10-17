@@ -59,6 +59,10 @@ public class EmploymentService {
     }
 
     private boolean hasOverlapEmploymentDates(List<Employment> employmentList, Employment newEmployment) {
+        if (employmentList == null) {
+            return false;
+        }
+
         for(Employment employment : employmentList) {
             if(newEmployment.getStartDate().isBefore(employment.getEndDate()) && newEmployment.getEndDate().isAfter(employmentList.get(0).getStartDate())) {
                 return true;

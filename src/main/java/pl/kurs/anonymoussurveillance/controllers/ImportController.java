@@ -23,7 +23,7 @@ public class ImportController {
 
     @Transactional
     @PostMapping
-    public ResponseEntity<ImportDto> importPeronFromCsv(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<ImportDto> importPersonFromCsv(@RequestParam("file") MultipartFile file) {
         try {
             Long importId = importService.importFile(file);
             ImportDto importDto = new ImportDto(importId, LocalDateTime.now());

@@ -15,6 +15,7 @@ import pl.kurs.anonymoussurveillance.models.PersonAttribute;
 import pl.kurs.anonymoussurveillance.models.RequiredAttribute;
 
 import java.util.List;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 @Configuration
@@ -80,8 +81,7 @@ public class BeansConfig {
 
         return mapper;
     }
-
-    private String getAttributeValue(Person person, String attributeName) {
+    protected String getAttributeValue(Person person, String attributeName) {
         if (person.getAttributes() != null) {
             return person.getAttributes().stream()
                     .filter(attr -> attr.getName().equals(attributeName))
@@ -90,5 +90,10 @@ public class BeansConfig {
                     .orElse(null);
         }
         return null;
+    }
+
+    @Bean
+    public ForkJoinPool forkJoinPool() {
+        return new ForkJoinPool();
     }
 }

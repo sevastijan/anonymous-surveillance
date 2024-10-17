@@ -1,0 +1,5 @@
+type,firstName,lastName,pesel,height,weight,email,universityName,studyYear,fieldOfStudy,scholarshipAmount,employmentStartDate-1,employmentEndDate-1,companyName-1,role-1,salary-1,employmentStartDate-2,employmentEndDate-2,companyName-2,role-2,salary-2,employmentStartDate-3,employmentEndDate-3,companyName-3,role-3,salary-3,pension,yearsWorked
+student,Alan,Wdowczyk,92121829963,155,111,michalwiercigroch@gmail.com,Jagiellonian University,5,Rzeczoznawca budowlany,sto,,,,,,,,,,,,,,,,,
+student,Natan,Garncarek,74092062329,157,54,witold85@interia.pl,Gdańsk University of Technology,3,Mim,3901,,,,,,,,,,,,,,,,,
+retiree,Norbert,Kościuszko,66070569197,191,55,natan15@drobek-dumin.org,,,,,,,,,,,,,,,,,,,,1962,43
+student,Natan,Garncarek,74092062329,157,54,witold85@interia.pl,Gdańsk University of Technology,3,Mim,3901,,,,,,,,,,,,,,,,,
