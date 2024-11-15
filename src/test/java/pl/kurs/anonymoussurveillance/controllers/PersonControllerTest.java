@@ -123,7 +123,7 @@ public class PersonControllerTest {
         Employment employment = new Employment();
         Person person = new Person();
         person.setId(personId);
-        person.setEmployment(List.of(employment));
+        person.setEmployment(Set.of(employment));
 
         when(modelMapper.map(command, Employment.class)).thenReturn(employment);
         when(employmentService.createNewEmployment(eq(personId), eq(employment))).thenReturn(person);

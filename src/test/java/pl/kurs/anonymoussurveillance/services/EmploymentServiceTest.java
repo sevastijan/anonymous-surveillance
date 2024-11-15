@@ -18,6 +18,7 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -43,7 +44,7 @@ public class EmploymentServiceTest {
         Long personId = 1L;
         Person person = new Person();
         Employment employment = new Employment(LocalDate.now().minusYears(1), LocalDate.now(), "Company A", "Developer", BigDecimal.valueOf(50000), person);
-        person.setEmployment(Collections.emptyList());
+        person.setEmployment(Collections.emptySet());
 
         when(personRepository.findById(personId)).thenReturn(Optional.of(person));
         when(employmentRepository.save(any(Employment.class))).thenReturn(employment);
@@ -72,7 +73,7 @@ public class EmploymentServiceTest {
         Person person = new Person();
         Employment existingEmployment = new Employment(1L, LocalDate.now().minusMonths(6), LocalDate.now().plusMonths(6), "Company B", "Manager", BigDecimal.valueOf(60000), person);
         Employment newEmployment = new Employment(LocalDate.now(), LocalDate.now().plusYears(1), "Company C", "Developer", BigDecimal.valueOf(70000), person);
-        person.setEmployment(List.of(existingEmployment));
+        person.setEmployment(Set.of(existingEmployment));
 
         when(personRepository.findById(personId)).thenReturn(Optional.of(person));
 

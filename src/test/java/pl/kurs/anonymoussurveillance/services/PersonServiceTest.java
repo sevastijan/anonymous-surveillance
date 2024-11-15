@@ -44,7 +44,7 @@ public class PersonServiceTest {
         person.setId(personId);
         person.setVersion(version);
 
-        List<PersonAttribute> attributes = new ArrayList<>() {};
+        Set<PersonAttribute> attributes = new HashSet<>() {};
         PersonAttribute existingAttribute = new PersonAttribute();
         existingAttribute.setName("height");
         existingAttribute.setValue("180");
@@ -111,7 +111,7 @@ public class PersonServiceTest {
         person.setId(personId);
         person.setVersion(version);
 
-        person.setAttributes(new ArrayList<>());
+        person.setAttributes(new HashSet<>());
 
         UpdatePersonCommand updateCommand = new UpdatePersonCommand();
         updateCommand.setId(personId);

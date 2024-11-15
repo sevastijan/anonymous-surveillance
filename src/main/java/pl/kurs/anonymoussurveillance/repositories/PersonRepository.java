@@ -14,6 +14,4 @@ import java.util.Optional;
 public interface PersonRepository extends JpaRepository<Person, Long>, JpaSpecificationExecutor<Person> {
     @Query("SELECT p FROM Person p LEFT JOIN FETCH p.attributes WHERE p.id = :id")
     Optional<Person> findByIdWithAttributes(@Param("id") Long id);
-
-
 }

@@ -13,6 +13,7 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -40,15 +41,15 @@ public class Person implements Serializable {
     private PersonType personType;
 
     @OneToMany(mappedBy = "person", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    private List<PersonAttribute> attributes;
+    private Set<PersonAttribute> attributes;
 
     @Version
     private Long version;
 
     @OneToMany(mappedBy = "person", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Employment> employment;
+    private Set<Employment> employment;
 
-    public Person(PersonType personType, List<PersonAttribute> attributes) {
+    public Person(PersonType personType, Set<PersonAttribute> attributes) {
         this.personType = personType;
         this.attributes = attributes;
     }

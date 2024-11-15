@@ -51,46 +51,7 @@ public class PersonController {
             @RequestParam Map<String, String> searchParams
     ) {
         Pageable pageable = PageRequest.of(page, size);
-
-        PersonSearchCriteriaDto personSearchCriteriaDto = new PersonSearchCriteriaDto();
-        List<PersonAttributeCriteriaDto> attributes = new ArrayList<>();
-        Map<String, Number[]> numberRange = new HashMap<>();
-        Map<String, LocalDate[]> dateRange = new HashMap<>();
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-        searchParams.forEach((key, value) -> {
-            if (!key.equals("page") && !key.equals("size")) {
-                if (key.startsWith("min") || key.startsWith("max")) {
-                    String attributeName = key.substring(3);
-                    if (value.matches("\\d{4}-\\d{2}-\\d{2}")) {
-                        LocalDate dateValue = LocalDate.parse(value, dateTimeFormatter);
-                        dateRange.putIfAbsent(attributeName, new LocalDate[2]);
-                        if (key.startsWith("min")) {
-                            dateRange.get(attributeName)[0] = dateValue;
-                        } else if (key.startsWith("max")) {
-                            dateRange.get(attributeName)[1] = dateValue;
-                        }
-                    } else {
-                        Number numberValue = value.contains(".") ? Double.parseDouble(value) : Integer.parseInt(value);
-                        numberRange.putIfAbsent(attributeName, new Number[2]);
-                        if (key.startsWith("min")) {
-                            numberRange.get(attributeName)[0] = numberValue;
-                        } else if (key.startsWith("max")) {
-                            numberRange.get(attributeName)[1] = numberValue;
-                        }
-                    }
-                } else {
-                    PersonAttributeCriteriaDto personAttributeCriteriaDto = new PersonAttributeCriteriaDto();
-                    personAttributeCriteriaDto.setName(key);
-                    personAttributeCriteriaDto.setValue(value);
-                    attributes.add(personAttributeCriteriaDto);
-                }
-            }
-        });
-
-        personSearchCriteriaDto.setAttributes(attributes);
-        personSearchCriteriaDto.setNumberRange(numberRange);
-        personSearchCriteriaDto.setDateRange(dateRange);
+        PersonSearchCriteriaDto personSearchCriteriaDto = personService.processSearchCriteria(searchParams);
 
         Page<Person> personListPage = personRepository.findAll(PersonSpecification.createSpecification(personSearchCriteriaDto), pageable);
 

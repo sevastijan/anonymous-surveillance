@@ -19,8 +19,9 @@ public class PersonAttribute implements Serializable, RootAware<Person> {
     private static final long serialVersionUID = 1L;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "person_attr_seq")
-    @SequenceGenerator(name = "person_attr_seq", sequenceName = "seq_person_attr", initialValue = 1)
+//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "person_attr_seq")
+//    @SequenceGenerator(name = "person_attr_seq", sequenceName = "seq_person_attr", initialValue = 1)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)

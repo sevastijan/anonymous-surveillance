@@ -7,7 +7,9 @@ import pl.kurs.anonymoussurveillance.dto.PersonDto;
 import pl.kurs.anonymoussurveillance.models.Person;
 import pl.kurs.anonymoussurveillance.models.PersonAttribute;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -31,7 +33,7 @@ public class BeansConfigTest {
     @Test
     public void shouldMapPersonToPersonDto() {
         Person person = new Person();
-        List<PersonAttribute> attributes = new java.util.ArrayList<>();
+        Set<PersonAttribute> attributes = new HashSet<>();
 
         attributes.add(createPersonAttribute("firstName", "Jan", person));
         attributes.add(createPersonAttribute("lastName", "Kowalski", person));
@@ -51,7 +53,7 @@ public class BeansConfigTest {
     @Test
     public void shouldReturnAttributeValue() {
         Person person = new Person();
-        List<PersonAttribute> attributes = new java.util.ArrayList<>();
+        Set<PersonAttribute> attributes = new HashSet<>();
         attributes.add(createPersonAttribute("firstName", "Jan", person));
         person.setAttributes(attributes);
 

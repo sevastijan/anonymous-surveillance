@@ -1,124 +1,118 @@
 package pl.kurs.anonymoussurveillance.services;
 
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
-import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import pl.kurs.anonymoussurveillance.factories.BatchProcessingServiceFactory;
 import pl.kurs.anonymoussurveillance.models.*;
 import pl.kurs.anonymoussurveillance.repositories.*;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class ImportService {
     private final ImportStatusRepository importStatusRepository;
-    private final BatchProcessingServiceFactory batchProcessingServiceFactory;
-    private final ForkJoinPool forkJoinPool;
+    private final PersonTypeRepository personTypeRepository;
+    private final ExecutorService executorService = Executors.newFixedThreadPool(64);
+    private final PlatformTransactionManager transactionManager;
+    private final JdbcTemplate jdbcTemplate;
 
     Future<?> currentImportTask;
+    private final Object importLock = new Object();
 
     @Transactional
     public Long importFile(MultipartFile file) {
-        if(file == null) {
+        if (file == null) {
             throw new IllegalArgumentException("File must not be null");
         }
 
-        if (currentImportTask != null && !currentImportTask.isDone()) {
-            throw new IllegalStateException("An import is already in progress");
+        synchronized (importLock) {
+            if (currentImportTask != null && !currentImportTask.isDone()) {
+                throw new IllegalStateException("Import already in progress");
+            }
+
+            ImportStatus importStatus = new ImportStatus();
+            importStatus.setStatus(Status.PENDING);
+            importStatus.setCreatedDate(LocalDateTime.now());
+            importStatusRepository.save(importStatus);
+
+            try {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()));
+                currentImportTask = executorService.submit(() -> {
+                    try {
+                        processFile(reader, importStatus);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+                return importStatus.getId();
+            } catch (Exception e) {
+                importStatus.setStatus(Status.FAILED);
+                importStatus.setErrorMessage(e.getMessage());
+                throw new RuntimeException(e.getMessage());
+            }
         }
+    }
 
-        ImportStatus importStatus = new ImportStatus();
-        importStatus.setStatus(Status.PENDING);
-        importStatus.setCreatedDate(LocalDateTime.now());
-        importStatusRepository.save(importStatus);
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    protected void processFile(BufferedReader file, ImportStatus importStatus) throws Exception {
 
-        BatchProcessingService.hasErrorOccurred.set(false);
+        BatchProcessingService batchProcessor = new BatchProcessingService(transactionManager, jdbcTemplate, personTypeRepository);
 
         try {
-            currentImportTask = forkJoinPool.submit(() -> {
-                try {
-                    importStatus.setStatus(Status.IN_PROGRESS);
-                    importStatus.setStartDate(LocalDateTime.now());
-                    importStatusRepository.save(importStatus);
+            importStatus.setStatus(Status.IN_PROGRESS);
+            importStatus.setStartDate(LocalDateTime.now());
+            importStatusRepository.save(importStatus);
 
-                    List<Person> personList = processFile(file, importStatus);
+            CSVParser parser = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(file);
+            Iterator<CSVRecord> iterator = parser.iterator();
 
-                    importStatus.setProcessedRows(personList.size());
-                    importStatus.setStatus(Status.COMPLETED);
-                    if (BatchProcessingService.hasErrorOccurred.get()) {
-                        throw new RuntimeException("Import failed due to validation error");
-                    }
+            List<CSVRecord> recordList = new ArrayList<>();
 
-                } catch (Exception e) {
-                    importStatus.setStatus(Status.FAILED);
-                    importStatus.setErrorMessage(e.getMessage());
+            parser.forEach(recordList::add);
 
-                    e.printStackTrace();
+            int totalProcessed = 0;
+            int batchSize = 2000;
 
-                    importStatus.setEndDate(LocalDateTime.now());
-                    importStatusRepository.save(importStatus);
-                    throw new RuntimeException(e.getMessage());
-                } finally {
-                    importStatus.setEndDate(LocalDateTime.now());
-                    double timeDifference = java.time.Duration.between(importStatus.getStartDate(), importStatus.getEndDate()).toMillis() / 1000.0;
-                    double rowsPerSecond = importStatus.getProcessedRows() / timeDifference;
+            for (int i = 0; i < recordList.size(); i += batchSize) {
+                int end = Math.min(i + batchSize, recordList.size());
+                List<CSVRecord> batch = recordList.subList(i, end);
 
-                    importStatus.setRowsPerSecond(rowsPerSecond);
-                    importStatusRepository.save(importStatus);
-                }
-            });
+                List<Person> processedBatch = batchProcessor.processBatch(batch);
+                totalProcessed += processedBatch.size();
+
+                importStatus.setProcessedRows(totalProcessed);
+                importStatusRepository.save(importStatus);
+            }
+            importStatus.setStatus(Status.COMPLETED);
         } catch (Exception e) {
             importStatus.setStatus(Status.FAILED);
             importStatus.setErrorMessage(e.getMessage());
-            importStatus.setEndDate(LocalDateTime.now());
-            importStatusRepository.save(importStatus);
             throw new RuntimeException(e.getMessage());
-        }
+        } finally {
+            importStatus.setEndDate(LocalDateTime.now());
 
-        return importStatus.getId();
-    }
-
-
-    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
-    public List<Person> processFile(MultipartFile file, ImportStatus importStatus) throws Exception {
-
-
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
-            Iterable<CSVRecord> records = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(reader);
-
-            List<CSVRecord> recordList = new ArrayList<>();
-            records.forEach(recordList::add);
-
-            ForkJoinTask<List<Person>> task = forkJoinPool.submit(
-                    batchProcessingServiceFactory.createBatchProcessingService(recordList, importStatus, 0, recordList.size())
-            );
-            List<Person> personList = task.join();
-
-            if (BatchProcessingService.hasErrorOccurred.get()) {
-                forkJoinPool.shutdownNow();
-                throw new RuntimeException("Import canceled due to error");
+            if (importStatus.getStartDate() != null) {
+                double timeDifference = java.time.Duration.between(importStatus.getStartDate(), importStatus.getEndDate()).toMillis() / 1000.0;
+                double rowsPerSecond = importStatus.getProcessedRows() / timeDifference;
+                importStatus.setRowsPerSecond(rowsPerSecond);
             }
 
-            return personList;
+            importStatusRepository.save(importStatus);
         }
-
-
     }
 
     public ImportStatus getImportStatus(Long importId) {

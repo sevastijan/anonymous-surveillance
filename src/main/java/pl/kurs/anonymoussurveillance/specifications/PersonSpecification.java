@@ -1,9 +1,6 @@
 package pl.kurs.anonymoussurveillance.specifications;
 
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.Expression;
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.*;
 import org.springframework.data.jpa.domain.Specification;
 import pl.kurs.anonymoussurveillance.dto.PersonAttributeCriteriaDto;
 import pl.kurs.anonymoussurveillance.dto.PersonSearchCriteriaDto;
@@ -19,68 +16,111 @@ import java.util.Map;
 public class PersonSpecification {
     public static Specification<Person> createSpecification(PersonSearchCriteriaDto personSearchCriteriaDto) {
         return (root, query, builder) -> {
-            List<Predicate> predicates = new ArrayList<>();
-
-            if (personSearchCriteriaDto.getAttributes() != null && !personSearchCriteriaDto.getAttributes().isEmpty()) {
-                for (PersonAttributeCriteriaDto attributeCriteria : personSearchCriteriaDto.getAttributes()) {
-                    Join<Person, PersonAttribute> attributesJoin = root.join("attributes");
-                    if (attributeCriteria.getName() != null && !attributeCriteria.getName().isEmpty()) {
-                        predicates.add(builder.equal(attributesJoin.get("name"), attributeCriteria.getName()));
-                    }
-                    if (attributeCriteria.getValue() != null && !attributeCriteria.getValue().isEmpty()) {
-                        predicates.add(builder.like(builder.lower(attributesJoin.get("value")), "%" + attributeCriteria.getValue().toLowerCase() + "%"));
-                    }
-                }
+            if (query.getResultType().equals(Long.class)) {
+                return createPredicates(root, query, builder, personSearchCriteriaDto);
             }
 
-            if (personSearchCriteriaDto.getNumberRange() != null && !personSearchCriteriaDto.getNumberRange().isEmpty()) {
-                for (Map.Entry<String, Number[]> entry : personSearchCriteriaDto.getNumberRange().entrySet()) {
-                    String attributeName = entry.getKey();
-                    Number[] range = entry.getValue();
-                    Join<Person, PersonAttribute> attributesJoin = root.join("attributes");
-                    Predicate attributeNamePredicate = builder.equal(attributesJoin.get("name"), attributeName);
-                    predicates.add(attributeNamePredicate);
+//            query.distinct(true);
+            return createPredicates(root, query, builder, personSearchCriteriaDto);
+        };
+    }
+    private static Predicate createPredicates(Root<Person> root, CriteriaQuery<?> query, CriteriaBuilder builder, PersonSearchCriteriaDto personSearchCriteriaDto) {
+        List<Predicate> predicates = new ArrayList<>();
+
+        if (personSearchCriteriaDto.getAttributes() != null && !personSearchCriteriaDto.getAttributes().isEmpty()) {
+            List<Predicate> attributePredicates = new ArrayList<>();
+
+            for (PersonAttributeCriteriaDto attributeCriteria : personSearchCriteriaDto.getAttributes()) {
+                Subquery<Long> subquery = query.subquery(Long.class);
+                Root<Person> subRoot = subquery.from(Person.class);
+                Join<Person, PersonAttribute> attributesJoin = subRoot.join("attributes");
+
+                List<Predicate> subPredicates = new ArrayList<>();
+                subPredicates.add(builder.equal(subRoot.get("id"), root.get("id")));
+
+                if (attributeCriteria.getName() != null && !attributeCriteria.getName().isEmpty()) {
+                    subPredicates.add(builder.equal(attributesJoin.get("name"), attributeCriteria.getName()));
+                }
+                if (attributeCriteria.getValue() != null && !attributeCriteria.getValue().isEmpty()) {
+                    subPredicates.add(builder.equal(attributesJoin.get("value"), attributeCriteria.getValue()));
+                }
+
+                subquery.select(subRoot.get("id"))
+                        .where(builder.and(subPredicates.toArray(new Predicate[0])));
+
+                attributePredicates.add(builder.exists(subquery));
+            }
+
+            if (!attributePredicates.isEmpty()) {
+                predicates.add(builder.and(attributePredicates.toArray(new Predicate[0])));
+            }
+        }
+
+        if (personSearchCriteriaDto.getNumberRange() != null && !personSearchCriteriaDto.getNumberRange().isEmpty()) {
+            for (Map.Entry<String, Number[]> entry : personSearchCriteriaDto.getNumberRange().entrySet()) {
+                String attributeName = entry.getKey();
+                Number[] range = entry.getValue();
+
+                if (range[0] != null || range[1] != null) {
+                    Subquery<Long> subquery = query.subquery(Long.class);
+                    Root<Person> subRoot = subquery.from(Person.class);
+                    Join<Person, PersonAttribute> attributesJoin = subRoot.join("attributes");
+
+                    List<Predicate> subPredicates = new ArrayList<>();
+                    subPredicates.add(builder.equal(subRoot.get("id"), root.get("id")));
+                    subPredicates.add(builder.equal(attributesJoin.get("name"), attributeName));
 
                     if (range[0] != null) {
-                        Predicate minPredicate = createNumericPredicate(builder, attributesJoin.get("value"), range[0], true);
-                        predicates.add(minPredicate);
+                        subPredicates.add(createNumericPredicate(builder, attributesJoin.get("value"), range[0], true));
                     }
                     if (range[1] != null) {
-                        Predicate maxPredicate = createNumericPredicate(builder, attributesJoin.get("value"), range[1], false);
-                        predicates.add(maxPredicate);
+                        subPredicates.add(createNumericPredicate(builder, attributesJoin.get("value"), range[1], false));
                     }
+
+                    subquery.select(subRoot.get("id"))
+                            .where(builder.and(subPredicates.toArray(new Predicate[0])));
+
+                    predicates.add(builder.exists(subquery));
                 }
             }
+        }
 
+        if (personSearchCriteriaDto.getDateRange() != null && !personSearchCriteriaDto.getDateRange().isEmpty()) {
+            for (Map.Entry<String, LocalDate[]> entry : personSearchCriteriaDto.getDateRange().entrySet()) {
+                String attributeName = entry.getKey();
+                LocalDate[] range = entry.getValue();
 
-            if (personSearchCriteriaDto.getDateRange() != null && !personSearchCriteriaDto.getDateRange().isEmpty()) {
-                for (Map.Entry<String, LocalDate[]> entry : personSearchCriteriaDto.getDateRange().entrySet()) {
-                    String attributeName = entry.getKey();
-                    LocalDate[] range = entry.getValue();
-                    Join<Person, PersonAttribute> attributesJoin = root.join("attributes");
-                    Predicate attributeNamePredicate = builder.equal(attributesJoin.get("name"), attributeName);
-                    predicates.add(attributeNamePredicate);
+                if (range[0] != null || range[1] != null) {
+                    Subquery<Long> subquery = query.subquery(Long.class);
+                    Root<Person> subRoot = subquery.from(Person.class);
+                    Join<Person, PersonAttribute> attributesJoin = subRoot.join("attributes");
+
+                    List<Predicate> subPredicates = new ArrayList<>();
+                    subPredicates.add(builder.equal(subRoot.get("id"), root.get("id")));
+                    subPredicates.add(builder.equal(attributesJoin.get("name"), attributeName));
 
                     Expression<LocalDate> datePath = attributesJoin.get("value").as(LocalDate.class);
 
                     if (range[0] != null) {
-                        Predicate minPredicate = builder.greaterThanOrEqualTo(datePath, range[0]);
-                        predicates.add(minPredicate);
+                        subPredicates.add(builder.greaterThanOrEqualTo(datePath, range[0]));
                     }
                     if (range[1] != null) {
-                        Predicate maxPredicate = builder.lessThanOrEqualTo(datePath, range[1]);
-                        predicates.add(maxPredicate);
+                        subPredicates.add(builder.lessThanOrEqualTo(datePath, range[1]));
                     }
+
+                    subquery.select(subRoot.get("id"))
+                            .where(builder.and(subPredicates.toArray(new Predicate[0])));
+
+                    predicates.add(builder.exists(subquery));
                 }
             }
+        }
 
-
-            if (predicates.isEmpty()) {
-                return builder.conjunction();
-            } else {
-                return builder.and(predicates.toArray(new Predicate[0]));
-            }
-        };
+        if (predicates.isEmpty()) {
+            return builder.conjunction();
+        } else {
+            return builder.and(predicates.toArray(new Predicate[0]));
+        }
     }
 
     private static Predicate createNumericPredicate(CriteriaBuilder builder, Expression<String> path, Number value, boolean isMin) {

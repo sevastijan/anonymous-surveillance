@@ -91,9 +91,4 @@ public class BeansConfig {
         }
         return null;
     }
-
-    @Bean
-    public ForkJoinPool forkJoinPool() {
-        return new ForkJoinPool();
-    }
 }

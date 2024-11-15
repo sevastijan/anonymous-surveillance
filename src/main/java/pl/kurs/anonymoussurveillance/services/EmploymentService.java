@@ -12,6 +12,7 @@ import pl.kurs.anonymoussurveillance.repositories.EmploymentRepository;
 import pl.kurs.anonymoussurveillance.repositories.PersonRepository;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -58,13 +59,13 @@ public class EmploymentService {
         employmentRepository.delete(selectedEmployment);
     }
 
-    private boolean hasOverlapEmploymentDates(List<Employment> employmentList, Employment newEmployment) {
+    private boolean hasOverlapEmploymentDates(Set<Employment> employmentList, Employment newEmployment) {
         if (employmentList == null) {
             return false;
         }
 
         for(Employment employment : employmentList) {
-            if(newEmployment.getStartDate().isBefore(employment.getEndDate()) && newEmployment.getEndDate().isAfter(employmentList.get(0).getStartDate())) {
+            if(newEmployment.getStartDate().isBefore(employment.getEndDate()) && newEmployment.getEndDate().isAfter(employmentList.iterator().next().getStartDate())) {
                 return true;
             }
         }

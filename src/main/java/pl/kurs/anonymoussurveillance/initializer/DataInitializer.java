@@ -59,7 +59,6 @@ public class DataInitializer implements CommandLineRunner {
         return Arrays.asList(
                 new RequiredAttribute("weight", AttributeType.DOUBLE),
                 new RequiredAttribute("height", AttributeType.DOUBLE),
-                new RequiredAttribute("pesel", AttributeType.STRING),
                 new RequiredAttribute("firstName", AttributeType.STRING),
                 new RequiredAttribute("lastName", AttributeType.STRING),
                 new RequiredAttribute("email", AttributeType.STRING)
