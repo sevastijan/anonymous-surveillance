@@ -59,7 +59,7 @@ public class EmploymentService {
         employmentRepository.delete(selectedEmployment);
     }
 
-    private boolean hasOverlapEmploymentDates(Set<Employment> employmentList, Employment newEmployment) {
+    boolean hasOverlapEmploymentDates(Set<Employment> employmentList, Employment newEmployment) {
         if (employmentList == null) {
             return false;
         }

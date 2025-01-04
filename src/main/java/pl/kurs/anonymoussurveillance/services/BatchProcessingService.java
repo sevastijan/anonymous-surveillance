@@ -1,10 +1,8 @@
 package pl.kurs.anonymoussurveillance.services;
 
 import org.apache.commons.csv.CSVRecord;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
-import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import pl.kurs.anonymoussurveillance.models.*;
@@ -18,7 +16,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -34,7 +31,6 @@ public class BatchProcessingService {
 
         this.personTypeCache = personTypeRepository.findAll().stream()
                 .collect(Collectors.toMap(PersonType::getName, Function.identity()));
-
     }
 
     public List<Person> processBatch(List<CSVRecord> batch) {
@@ -222,7 +218,6 @@ public class BatchProcessingService {
                 return personList;
 
             } catch (Exception e) {
-                status.setRollbackOnly();
                 throw e;
             }
         });

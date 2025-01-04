@@ -1,14 +1,9 @@
 package pl.kurs.anonymoussurveillance.models;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
-import org.apache.catalina.User;
-import org.springframework.data.annotation.CreatedBy;
-import org.springframework.data.annotation.CreatedDate;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -16,9 +11,9 @@ import java.util.List;
 import java.util.Objects;
 
 @Entity
-@Getter
 @Setter
 @NoArgsConstructor
+@Getter
 @Table(name = "person_types")
 public class PersonType implements Serializable {
     @Serial

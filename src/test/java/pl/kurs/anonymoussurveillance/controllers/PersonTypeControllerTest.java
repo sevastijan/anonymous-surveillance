@@ -86,7 +86,6 @@ public class PersonTypeControllerTest {
 
     @Test
     public void shouldReturnBadRequestWhenRequiredAttributesAreEmpty() {
-        //TODO: verify
         createPersonTypeCommand.setAttributes(Collections.emptyList());
 
         assertThrows(ResponseStatusException.class, () -> {
@@ -96,7 +95,6 @@ public class PersonTypeControllerTest {
 
     @Test
     public void shouldReturnBadRequestWhenRequiredAttributesAreNull() {
-        //TODO: verify
         createPersonTypeCommand.setAttributes(null);
 
         assertThrows(ResponseStatusException.class, () -> {

@@ -15,11 +15,11 @@ import pl.kurs.anonymoussurveillance.models.PersonAttribute;
 import pl.kurs.anonymoussurveillance.models.RequiredAttribute;
 
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 @Configuration
 public class BeansConfig {
+
     @Bean
     public ModelMapper getModelMapper() {
         ModelMapper mapper = new ModelMapper();
@@ -51,7 +51,7 @@ public class BeansConfig {
             @Override
             protected void configure() {
                 map().setName(source.getName());
-                map().setValue(source.getValue());
+                map().setValue(source.getAttribute_value());
             }
         });
 
@@ -68,24 +68,33 @@ public class BeansConfig {
                 .addMappings(m -> m.skip(PersonType::setRequiredAttributes))
                 .setPostConverter(context -> {
                     PersonType destination = context.getDestination();
-                    List<RequiredAttribute> requiredAttributes = context.getSource().getAttributes().stream()
-                            .map(attr -> {
-                                RequiredAttribute requiredAttribute = mapper.map(attr, RequiredAttribute.class);
-                                requiredAttribute.setPersonType(destination);
-                                return requiredAttribute;
-                            })
-                            .collect(Collectors.toList());
+                    List<RequiredAttribute> requiredAttributes = mapRequiredAttributes(
+                            destination,
+                            context.getSource().getAttributes(),
+                            mapper
+                    );
                     destination.setRequiredAttributes(requiredAttributes);
                     return context.getDestination();
                 });
 
         return mapper;
     }
+
+    List<RequiredAttribute> mapRequiredAttributes(PersonType destination, List<RequiredAttribute> sourceAttributes, ModelMapper mapper) {
+        return sourceAttributes.stream()
+                .map(attr -> {
+                    RequiredAttribute requiredAttribute = mapper.map(attr, RequiredAttribute.class);
+                    requiredAttribute.setPersonType(destination);
+                    return requiredAttribute;
+                })
+                .collect(Collectors.toList());
+    }
+
     protected String getAttributeValue(Person person, String attributeName) {
         if (person.getAttributes() != null) {
             return person.getAttributes().stream()
                     .filter(attr -> attr.getName().equals(attributeName))
-                    .map(PersonAttribute::getValue)
+                    .map(PersonAttribute::getAttribute_value)
                     .findFirst()
                     .orElse(null);
         }

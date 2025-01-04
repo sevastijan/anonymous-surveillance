@@ -1,7 +1,6 @@
 package pl.kurs.anonymoussurveillance.models;
 
 import jakarta.persistence.*;
-import jakarta.persistence.criteria.Root;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
@@ -30,16 +29,16 @@ public class PersonAttribute implements Serializable, RootAware<Person> {
     @Enumerated(EnumType.STRING)
     private AttributeType type;
 
-    private String value;
+    private String attribute_value;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "person_id")
     private Person person;
 
-    public PersonAttribute(String name, AttributeType type, String value, Person person) {
+    public PersonAttribute(String name, AttributeType type, String attribute_value, Person person) {
         this.name = name;
         this.type = type;
-        this.value = value;
+        this.attribute_value = attribute_value;
         this.person = person;
     }
 
@@ -54,7 +53,7 @@ public class PersonAttribute implements Serializable, RootAware<Person> {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", type=" + type +
-                ", value='" + value + '\'' +
+                ", value='" + attribute_value + '\'' +
                 ", person=" + person +
                 '}';
     }

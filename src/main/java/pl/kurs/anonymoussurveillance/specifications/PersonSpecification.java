@@ -1,6 +1,7 @@
 package pl.kurs.anonymoussurveillance.specifications;
 
 import jakarta.persistence.criteria.*;
+import lombok.experimental.UtilityClass;
 import org.springframework.data.jpa.domain.Specification;
 import pl.kurs.anonymoussurveillance.dto.PersonAttributeCriteriaDto;
 import pl.kurs.anonymoussurveillance.dto.PersonSearchCriteriaDto;
@@ -13,12 +14,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class PersonSpecification {
+@UtilityClass
+public final class PersonSpecification {
     public static Specification<Person> createSpecification(PersonSearchCriteriaDto personSearchCriteriaDto) {
         return (root, query, builder) -> {
-            if (query.getResultType().equals(Long.class)) {
-                return createPredicates(root, query, builder, personSearchCriteriaDto);
-            }
+//            if (query.getResultType().equals(Long.class)) {
+//                return createPredicates(root, query, builder, personSearchCriteriaDto);
+//            }
 
 //            query.distinct(true);
             return createPredicates(root, query, builder, personSearchCriteriaDto);

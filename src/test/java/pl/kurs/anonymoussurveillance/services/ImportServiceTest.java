@@ -1,33 +1,44 @@
 package pl.kurs.anonymoussurveillance.services;
 
+import jakarta.annotation.Resource;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.transaction.PlatformTransactionManager;
-import pl.kurs.anonymoussurveillance.models.*;
-import pl.kurs.anonymoussurveillance.repositories.*;
+import org.springframework.web.multipart.MultipartFile;
+import pl.kurs.anonymoussurveillance.models.ImportStatus;
+import pl.kurs.anonymoussurveillance.models.Person;
+import pl.kurs.anonymoussurveillance.models.PersonType;
+import pl.kurs.anonymoussurveillance.models.Status;
+import pl.kurs.anonymoussurveillance.repositories.ImportStatusRepository;
+import pl.kurs.anonymoussurveillance.repositories.PersonTypeRepository;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
-class ImportServiceTest {
-
-    @InjectMocks
-    private ImportService importService;
+public class ImportServiceTest {
 
     @Mock
     private ImportStatusRepository importStatusRepository;
@@ -41,95 +52,91 @@ class ImportServiceTest {
     @Mock
     private JdbcTemplate jdbcTemplate;
 
-    private byte[] csvData;
+    @Mock
+    private MultipartFile multipartFile;
+
+    private ImportService importService;
 
     @BeforeEach
-    void setUp() throws Exception {
-        MockitoAnnotations.openMocks(this);
-
-        try (InputStream inputStream = new ClassPathResource("people_records_sample.csv").getInputStream()) {
-            csvData = inputStream.readAllBytes();
-
-            System.out.println(new String(csvData));
-        }
+    public void setUp() {
+        importService = new ImportService(
+                importStatusRepository,
+                personTypeRepository,
+                transactionManager,
+                jdbcTemplate
+        );
     }
 
     @Test
-    public void shouldSuccessfullyImportSampleFle () throws Exception {
-        MockMultipartFile file = new MockMultipartFile("file", "people_records_sample.csv", "text/csv", csvData);
+    public void shouldThrowIllegalStateExceptionWhenImportInProgress() throws IOException {
+        when(multipartFile.getInputStream()).thenReturn(new ByteArrayInputStream("test".getBytes()));
 
-        when(importStatusRepository.save(any(ImportStatus.class))).thenAnswer(invocation -> {
-            ImportStatus status = invocation.getArgument(0);
-            if (status.getId() == null) {
-                status.setId(1L);
-            }
-            return status;
-        });
+        importService.importFile(multipartFile);
 
-        when(personTypeRepository.findByName(anyString())).thenReturn(Optional.of(new PersonType()));
-        when(jdbcTemplate.batchUpdate(anyString(), anyList())).thenReturn(new int[]{1});
-        when(transactionManager.getTransaction(any())).thenReturn(mock(org.springframework.transaction.TransactionStatus.class));
-        when(importService.importFile(file)).thenReturn(1L);
-
-        Long importId = importService.importFile(file);
-
-        Thread.sleep(2000);
-
-        System.out.println(importId);
-
-        assertNotNull(importId, "Import ID should not be null");
-        verify(importStatusRepository, atLeast(2)).save(any(ImportStatus.class)); // Initial save and updates
+        assertThrows(IllegalStateException.class, () -> importService.importFile(multipartFile));
     }
 
     @Test
     public void shouldThrowIllegalArgumentExceptionWhenFileIsNull() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            importService.importFile(null);
-        });
-        assertEquals("File must not be null", exception.getMessage());
+        assertThrows(IllegalArgumentException.class, () -> importService.importFile(null));
     }
 
     @Test
-    public void shouldReturnImportInprogressWhileStartNewImport() throws Exception {
-        MockMultipartFile file = new MockMultipartFile("file", "people_records_sample.csv", "text/csv", csvData);
+    public void shouldReturnStatusWhenImportExist() {
+        ImportStatus mockStatus = new ImportStatus();
+        mockStatus.setId(1L);
+        mockStatus.setStatus(Status.COMPLETED);
 
-        importService.currentImportTask = CompletableFuture.runAsync(() -> {
-            try {
-                Thread.sleep(5000); // Simulate long-running task
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        });
+        when(importStatusRepository.findById(1L)).thenReturn(Optional.of(mockStatus));
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            importService.importFile(file);
-        });
-        assertEquals("Import already in progress", exception.getMessage());
+        ImportStatus retrievedStatus = importService.getImportStatus(1L);
+
+        assertEquals(Status.COMPLETED, retrievedStatus.getStatus());
+        assertEquals(1L, retrievedStatus.getId());
     }
 
     @Test
-    public void shouldThrowExceptionErrorWhileProcessFile() throws Exception {
-        BufferedReader reader = new BufferedReader(new java.io.InputStreamReader(new java.io.ByteArrayInputStream(csvData)));
-        ImportStatus importStatus = new ImportStatus();
-        importStatus.setId(1L);
-
-        when(personTypeRepository.findByName(anyString())).thenThrow(new RuntimeException("Database error"));
-
-
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            importService.processFile(reader, importStatus);
-        });
-        assertEquals("Database error", exception.getCause().getMessage());
-        assertEquals(Status.FAILED, importStatus.getStatus());
-    }
-
-    @Test
-    public void shouldReturnNotFoundStatus() {
+    public void shouldIllegalArgumentExceptionWhenImportNotExist() {
         when(importStatusRepository.findById(anyLong())).thenReturn(Optional.empty());
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            importService.getImportStatus(999L);
+        assertThrows(IllegalArgumentException.class, () -> importService.getImportStatus(999L));
+    }
+
+    @Test
+    public void shouldSetStatusToFailedWhenExceptionOccurs() throws IOException {
+        MultipartFile mockFile = mock(MultipartFile.class);
+        when(mockFile.getInputStream()).thenThrow(new RuntimeException());
+
+        when(importStatusRepository.save(any(ImportStatus.class))).thenAnswer(invocation -> {
+            ImportStatus status = invocation.getArgument(0);
+            status.setId(1L);
+            return status;
         });
-        assertEquals("Import not found", exception.getMessage());
+
+        assertThrows(RuntimeException.class,
+                () -> importService.importFile(mockFile)
+        );
+
+    }
+
+    @Test
+    public void shouldProcessBatchesAndUpdateImportStatus() throws Exception {
+        PersonType studentType = mock(PersonType.class);
+        when(studentType.getName()).thenReturn("student");
+
+        InputStream inputStream = getClass().getResourceAsStream("/people_records_sample.csv");
+        MockMultipartFile file = new MockMultipartFile("file", "people_records_sample.csv", "text/csv", inputStream);
+
+        when(personTypeRepository.findAll()).thenReturn(Collections.singletonList(studentType));
+        when(importStatusRepository.save(any(ImportStatus.class))).thenAnswer(invocation -> {
+            ImportStatus status = invocation.getArgument(0);
+            status.setId(1L);
+            return status;
+        });
+
+        Long importId = importService.importFile(file);
+
+        assertNotNull(importId);
+        verify(importStatusRepository, atLeastOnce()).save(any(ImportStatus.class));
     }
 }

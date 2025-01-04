@@ -226,17 +226,6 @@ public class PersonControllerTest {
         assertNull(response.getBody());
     }
 
-//    @Test
-//    public void shouldThrowExceptionWhenEmploymentNotFoundOnDelete() {
-//        Long personId = 1L;
-//        Long employmentId = 1L;
-//
-//        doThrow(new EmploymentNotFoundException(personId, employmentId))
-//                .when(employmentService).removeEmployment(personId, employmentId);
-//
-//        assertThrows(EmploymentNotFoundException.class, () -> personController.deleteEmployment(personId, employmentId));
-//    }
-
     @Test
     public void shouldHandlePersonNotFoundException() {
         PersonNotFoundException exception = new PersonNotFoundException("Person not found");

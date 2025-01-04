@@ -78,7 +78,6 @@ public class ImportService {
             importStatusRepository.save(importStatus);
 
             CSVParser parser = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(file);
-            Iterator<CSVRecord> iterator = parser.iterator();
 
             List<CSVRecord> recordList = new ArrayList<>();
 

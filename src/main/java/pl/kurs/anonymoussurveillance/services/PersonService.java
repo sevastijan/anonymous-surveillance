@@ -73,11 +73,11 @@ public class PersonService {
         for(UpdatePersonAttributeCommand updatePersonAttributeCommand : updatePersonCommand.getAttributes()) {
             if(personAttributeMap.containsKey(updatePersonAttributeCommand.getName())) {
                 PersonAttribute existingPersonAttribute = personAttributeMap.get(updatePersonAttributeCommand.getName());
-                existingPersonAttribute.setValue(updatePersonAttributeCommand.getValue());
+                existingPersonAttribute.setAttribute_value(updatePersonAttributeCommand.getValue());
             } else {
                 PersonAttribute newPersonAttributes = new PersonAttribute();
                 newPersonAttributes.setName(updatePersonAttributeCommand.getName());
-                newPersonAttributes.setValue(updatePersonAttributeCommand.getValue());
+                newPersonAttributes.setAttribute_value(updatePersonAttributeCommand.getValue());
                 newPersonAttributes.setPerson(person);
                 person.getAttributes().add(newPersonAttributes);
             }
